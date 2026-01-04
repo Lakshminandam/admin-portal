@@ -180,21 +180,19 @@
                 };
             });
         } else {
-            // Once all steps are complete, automatically enable and submit
             autoSubmitByAI();
         }
     }
 
     function autoSubmitByAI() {
-        const finishMsg = "All details collected. Submitting your complaint automatically.";
+        const finishMsg = "Thank you. All details have been collected. Submitting your complaint now.";
         document.getElementById('ai_status').innerText = finishMsg;
         document.getElementById('submitBtn').disabled = false;
         
         speak(finishMsg, () => {
-            // Brief delay for user to read status before redirect/alert
             setTimeout(() => {
                 submitFinalForm();
-            }, 1000);
+            }, 800);
         });
     }
 
