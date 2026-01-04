@@ -44,7 +44,7 @@
             box-shadow: 0 0 15px rgba(63, 81, 181, 0.3);
         }
 
-        .ai-status-box { background: #003366; color: white; padding: 15px; border-radius: 8px; margin-bottom: 25px; text-align: center; }
+        .ai-status-box { background: #003366; color: white; padding: 15px; border-radius: 88px; margin-bottom: 25px; text-align: center; }
         .mic-btn { background: #3f51b5; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 1.5rem; transition: 0.3s; }
         
         .btn-submit { background-color: #28a745; border: none; padding: 12px 40px; font-weight: bold; color: white; border-radius: 8px; transition: 0.3s; }
@@ -117,15 +117,11 @@
 </div>
 
 <script>
-    {FB_CONFIG}
-    
-    // This part checks if the robot has injected the config yet
+    // {FB_CONFIG}
+
     if (typeof firebaseConfig !== 'undefined') {
         firebase.initializeApp(firebaseConfig);
-    } else {
-        console.log("Waiting for GitHub Action to inject Firebase Config...");
     }
-    
     const db = firebase.database();
 
     const questions = [
@@ -293,6 +289,4 @@
     }
 </script>
 </body>
-</html> 
-
-
+</html>
