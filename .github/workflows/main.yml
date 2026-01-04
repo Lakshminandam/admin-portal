@@ -20,7 +20,6 @@ jobs:
           FB_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
         run: |
           perl -i -pe "s|// GITHUB_ACTION_PLACEHOLDER|$ENV{FB_CONFIG}|g" index.html
-          perl -i -pe "s|// GITHUB_ACTION_PLACEHOLDER|$ENV{FB_CONFIG}|g" admin.html
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
