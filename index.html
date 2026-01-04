@@ -6,6 +6,7 @@
     <title>State Electricity Portal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root { --primary: #003366; --accent: #FFD700; --bg: #f8fafc; }
         body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; }
@@ -44,6 +45,9 @@
         
         .btn-submit { background-color: #28a745; border: none; padding: 12px 40px; font-weight: bold; color: white; border-radius: 8px; transition: 0.3s; }
         .btn-submit:disabled { background-color: #6c757d; opacity: 0.6; }
+
+        .swal2-popup { border-radius: 20px !important; }
+        .swal2-styled.swal2-confirm { background-color: #003366 !important; padding: 12px 30px; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -99,7 +103,7 @@
                             <i class="bi bi-mic-fill"></i>
                         </button>
                         <button class="btn-submit shadow" id="submitBtn" onclick="submitFinalForm()" disabled>
-                            SUBMIT GRIEVANCE
+                            SUBMIT
                         </button>
                     </div>
                 </div>
@@ -209,17 +213,38 @@
     function submitFinalForm() {
         const complaintID = _generateComplaintId();
         
-        alert("SUCCESS!\n\nYour complaint has been registered.\nComplaint ID: " + complaintID);
-        
-        try {
-            if (window.Toaster && window.Toaster.postMessage) {
-                window.Toaster.postMessage("completed");
-            } else {
-                window.location.reload();
+        Swal.fire({
+            title: 'Registration Successful!',
+            html: `
+                <div style="text-align: center;">
+                    <p>Your complaint has been registered successfully.</p>
+                    <div style="background: #f0f4f8; padding: 15px; border-radius: 10px; border: 1px dashed #003366; margin: 15px 0;">
+                        <span style="font-size: 0.8rem; color: #666;">COMPLAINT ID</span><br>
+                        <strong style="font-size: 1.4rem; color: #003366;">${complaintID}</strong>
+                    </div>
+                </div>
+            `,
+            icon: 'success',
+            confirmButtonText: 'GO TO DASHBOARD',
+            allowOutsideClick: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                try {
+                    if (window.Toaster && window.Toaster.postMessage) {
+                        window.Toaster.postMessage("completed");
+                    } 
+                    else if (window.opener) {
+                        window.opener.postMessage("completed", "*");
+                        window.close(); 
+                    }
+                    else {
+                        window.location.reload();
+                    }
+                } catch (e) {
+                    window.location.reload();
+                }
             }
-        } catch (e) {
-            window.location.reload();
-        }
+        });
     }
 
     function speak(text, callback) {
