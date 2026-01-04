@@ -14,22 +14,41 @@
         .nav-link { color: white !important; cursor: pointer; font-weight: 500; margin: 0 10px; }
         .page-content { display: none; padding: 50px 0; }
         .active-page { display: block; animation: fadeIn 0.5s ease; }
+
         .hero { 
             background: linear-gradient(rgba(0,51,102,0.7), rgba(0,51,102,0.7)), 
                         url('https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?q=80&w=1600'); 
             background-size: cover; background-position: center;
             color: white; padding: 120px 0; border-radius: 0 0 50px 50px;
         }
-        .form-card { background: white; border-radius: 12px; padding: 35px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 5px solid var(--primary); }
+
+        .form-card { 
+            background: white; border-radius: 12px; padding: 35px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 5px solid var(--primary);
+        }
         .form-control { background-color: #f8fafc !important; border: 1px solid #ced4da; padding: 12px; }
-        .form-control[readonly] { background-color: #eef2f7 !important; border-left: 4px solid var(--primary); cursor: not-allowed; }
-        .voice-active { border: 2px solid #3f51b5 !important; background-color: #fffde7 !important; box-shadow: 0 0 15px rgba(63, 81, 181, 0.3); }
+        
+        .form-control[readonly] {
+            background-color: #eef2f7 !important;
+            border-left: 4px solid var(--primary);
+            cursor: not-allowed;
+        }
+
+        .voice-active { 
+            border: 2px solid #3f51b5 !important; 
+            background-color: #fffde7 !important; 
+            box-shadow: 0 0 15px rgba(63, 81, 181, 0.3);
+        }
+
         .ai-status-box { background: #003366; color: white; padding: 15px; border-radius: 8px; margin-bottom: 25px; text-align: center; }
         .mic-btn { background: #3f51b5; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 1.5rem; transition: 0.3s; }
+        
         .btn-submit { background-color: #28a745; border: none; padding: 12px 40px; font-weight: bold; color: white; border-radius: 8px; transition: 0.3s; }
         .btn-submit:disabled { background-color: #6c757d; opacity: 0.6; }
+
         .swal2-popup { border-radius: 20px !important; }
         .swal2-styled.swal2-confirm { background-color: #003366 !important; padding: 12px 30px; }
+
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
@@ -93,29 +112,6 @@
     </div>
 </div>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
-    authDomain: "voice-complaint.firebaseapp.com",
-    projectId: "voice-complaint",
-    storageBucket: "voice-complaint.firebasestorage.app",
-    messagingSenderId: "138166783170",
-    appId: "1:138166783170:web:668806d1023e37f83e7f5b",
-    measurementId: "G-2V47MZ83SB"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  // CRITICAL: Attach to window so the other script can see it
-  window.db = db;
-  window.dbRef = ref;
-  window.dbSet = set;
-</script>
-
 <script>
     const questions = [
         { id: "field_name", prompt: "Tell me your full name." },
@@ -160,20 +156,32 @@
         if (currentStep < questions.length) {
             const q = questions[currentStep];
             const inputField = document.getElementById(q.id);
-            if (q.id === "field_mobile") { currentStep++; askNextQuestion(); return; }
+
+            if (q.id === "field_mobile") {
+                currentStep++;
+                askNextQuestion();
+                return;
+            }
+
             inputField.classList.add('voice-active');
             document.getElementById('ai_status').innerText = "AI asking: " + q.prompt;
+            
             speak(q.prompt, () => {
                 recognition.start();
                 recognition.onresult = (event) => {
                     let text = event.results[0][0].transcript;
-                    if(q.id === "field_pincode") text = text.replace(/\D/g, '').slice(-6);
+                    if(q.id === "field_pincode") {
+                        text = text.replace(/\D/g, '').slice(-6);
+                    }
                     inputField.value = text;
                     inputField.classList.remove('voice-active');
                     currentStep++;
                     setTimeout(askNextQuestion, 600);
                 };
-                recognition.onerror = () => { recognition.stop(); setTimeout(askNextQuestion, 1000); };
+                recognition.onerror = () => {
+                    recognition.stop();
+                    setTimeout(askNextQuestion, 1000);
+                };
             });
         } else {
             autoSubmitByAI();
@@ -184,72 +192,58 @@
         const finishMsg = "Thank you. All details have been collected. Submitting your complaint now.";
         document.getElementById('ai_status').innerText = finishMsg;
         document.getElementById('submitBtn').disabled = false;
-        speak(finishMsg, () => { setTimeout(() => { submitFinalForm(); }, 800); });
+        
+        speak(finishMsg, () => {
+            setTimeout(() => {
+                submitFinalForm();
+            }, 800);
+        });
     }
 
     function _generateComplaintId() {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ123456789';
         let randomStr = '';
-        for (let i = 0; i < 5; i++) { randomStr += chars.charAt(Math.floor(Math.random() * chars.length)); }
+        for (let i = 0; i < 5; i++) {
+            const randomIndex = Math.floor(Math.random() * chars.length);
+            randomStr += chars.charAt(randomIndex);
+        }
         return "CP" + randomStr;
     }
 
     function submitFinalForm() {
         const complaintID = _generateComplaintId();
-        const mobile = document.getElementById('field_mobile').value;
-
-        // PREPARE DATA FOR FIREBASE
-        const complaintData = {
-            complaintId: complaintID,
-            name: document.getElementById('field_name').value,
-            age: document.getElementById('field_age').value,
-            gender: document.getElementById('field_gender').value,
-            mobile: mobile,
-            address: document.getElementById('field_address').value,
-            pincode: document.getElementById('field_pincode').value,
-            district: document.getElementById('field_district').value,
-            mandal: document.getElementById('field_mandal').value,
-            state: document.getElementById('field_state').value,
-            description: document.getElementById('field_complaint').value,
-            status: "Pending",
-            timestamp: new Date().toISOString()
-        };
-
-        // SAVE TO FIREBASE
-        window.dbSet(window.dbRef(window.db, 'complaints/' + mobile), complaintData)
-        .then(() => {
-            Swal.fire({
-                title: 'Registration Successful!',
-                html: `
-                    <div style="text-align: center;">
-                        <p>Your complaint has been registered successfully.</p>
-                        <div style="background: #f0f4f8; padding: 15px; border-radius: 10px; border: 1px dashed #003366; margin: 15px 0;">
-                            <span style="font-size: 0.8rem; color: #666;">COMPLAINT ID</span><br>
-                            <strong style="font-size: 1.4rem; color: #003366;">${complaintID}</strong>
-                        </div>
+        
+        Swal.fire({
+            title: 'Registration Successful!',
+            html: `
+                <div style="text-align: center;">
+                    <p>Your complaint has been registered successfully.</p>
+                    <div style="background: #f0f4f8; padding: 15px; border-radius: 10px; border: 1px dashed #003366; margin: 15px 0;">
+                        <span style="font-size: 0.8rem; color: #666;">COMPLAINT ID</span><br>
+                        <strong style="font-size: 1.4rem; color: #003366;">${complaintID}</strong>
                     </div>
-                `,
-                icon: 'success',
-                confirmButtonText: 'GO TO DASHBOARD',
-                allowOutsideClick: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    if(window.opener) {
-                        window.opener.postMessage("completed", "*");
-                        setTimeout(() => { window.close(); }, 500);
-                    }
-                    else if(window.Toaster && window.Toaster.postMessage) {
+                </div>
+            `,
+            icon: 'success',
+            confirmButtonText: 'GO TO DASHBOARD',
+            allowOutsideClick: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                try {
+                    if (window.Toaster && window.Toaster.postMessage) {
                         window.Toaster.postMessage("completed");
+                    } 
+                    else if (window.opener) {
+                        window.opener.postMessage("completed", "*");
+                        window.close(); 
                     }
                     else {
                         window.location.reload();
                     }
+                } catch (e) {
+                    window.location.reload();
                 }
-            });
-        })
-        .catch((error) => {
-            console.error("Firebase Error:", error);
-            alert("Failed to save to database. Check your Firebase Rules!");
+            }
         });
     }
 
