@@ -7,6 +7,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
     <style>
         :root { --primary: #003366; --accent: #FFD700; --bg: #f8fafc; }
         body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; }
@@ -113,6 +117,13 @@
 </div>
 
 <script>
+    // GITHUB_ACTION_PLACEHOLDER
+    
+    if (typeof firebaseConfig !== 'undefined') {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+
     const questions = [
         { id: "field_name", prompt: "Tell me your full name." },
         { id: "field_age", prompt: "How old are you?" },
@@ -213,37 +224,60 @@
     function submitFinalForm() {
         const complaintID = _generateComplaintId();
         
-        Swal.fire({
-            title: 'Registration Successful!',
-            html: `
-                <div style="text-align: center;">
-                    <p>Your complaint has been registered successfully.</p>
-                    <div style="background: #f0f4f8; padding: 15px; border-radius: 10px; border: 1px dashed #003366; margin: 15px 0;">
-                        <span style="font-size: 0.8rem; color: #666;">COMPLAINT ID</span><br>
-                        <strong style="font-size: 1.4rem; color: #003366;">${complaintID}</strong>
+        const complaintData = {
+            complaintId: complaintID,
+            name: document.getElementById('field_name').value,
+            age: document.getElementById('field_age').value,
+            gender: document.getElementById('field_gender').value,
+            mobile: document.getElementById('field_mobile').value,
+            address: document.getElementById('field_address').value,
+            pincode: document.getElementById('field_pincode').value,
+            district: document.getElementById('field_district').value,
+            mandal: document.getElementById('field_mandal').value,
+            state: document.getElementById('field_state').value,
+            description: document.getElementById('field_complaint').value,
+            department: "Electricity",
+            status: "Pending",
+            timestamp: Date.now()
+        };
+
+        db.ref('complaints/' + complaintID).set(complaintData)
+        .then(() => {
+            Swal.fire({
+                title: 'Registration Successful!',
+                html: `
+                    <div style="text-align: center;">
+                        <p>Your complaint has been registered successfully.</p>
+                        <div style="background: #f0f4f8; padding: 15px; border-radius: 10px; border: 1px dashed #003366; margin: 15px 0;">
+                            <span style="font-size: 0.8rem; color: #666;">COMPLAINT ID</span><br>
+                            <strong style="font-size: 1.4rem; color: #003366;">${complaintID}</strong>
+                        </div>
                     </div>
-                </div>
-            `,
-            icon: 'success',
-            confirmButtonText: 'GO TO DASHBOARD',
-            allowOutsideClick: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                try {
-                    if (window.Toaster && window.Toaster.postMessage) {
-                        window.Toaster.postMessage("completed");
-                    } 
-                    else if (window.opener) {
-                        window.opener.postMessage("completed", "*");
-                        window.close(); 
-                    }
-                    else {
+                `,
+                icon: 'success',
+                confirmButtonText: 'GO TO DASHBOARD',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    try {
+                        if (window.Toaster && window.Toaster.postMessage) {
+                            window.Toaster.postMessage("completed");
+                        } 
+                        else if (window.opener) {
+                            window.opener.postMessage("completed", "*");
+                            window.close(); 
+                        }
+                        else {
+                            window.location.reload();
+                        }
+                    } catch (e) {
                         window.location.reload();
                     }
-                } catch (e) {
-                    window.location.reload();
                 }
-            }
+            });
+        })
+        .catch((error) => {
+            Swal.fire('Error', 'Failed to save to database: ' + error.message, 'error');
         });
     }
 
