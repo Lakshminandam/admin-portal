@@ -1,0 +1,28 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main  # This tells GitHub to run this robot every time you "Push" to the main branch
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Inject Firebase Config
+        run: |
+          # This command searches for your placeholder comment in index.html 
+          # and replaces it with the Secret you saved in Step 1.
+          sed -i "s|// GITHUB_ACTION_PLACEHOLDER|${{ secrets.FIREBASE_CONFIG }}|g" index.html
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: .        # Deploy everything in the root folder
+          branch: gh-pages # This creates a special branch for your live website
