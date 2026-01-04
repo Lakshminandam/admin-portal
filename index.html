@@ -231,10 +231,13 @@
             if (result.isConfirmed) {
                 if(window.opener) {
                     window.opener.postMessage("completed", "*");
-                    window.close();
+                    setTimeout(() => { window.close(); }, 500);
                 }
                 else if(window.Toaster && window.Toaster.postMessage) {
                     window.Toaster.postMessage("completed");
+                }
+                else {
+                    window.location.reload();
                 }
             }
         });
