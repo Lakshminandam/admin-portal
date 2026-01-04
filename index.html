@@ -134,7 +134,6 @@
     window.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
         let mobileFromUrl = urlParams.get('phone');
-        
         if (mobileFromUrl) {
             mobileFromUrl = mobileFromUrl.replace(/\D/g, '').slice(-10);
             const mobileInput = document.getElementById('field_mobile');
@@ -154,7 +153,6 @@
             const q = questions[currentStep];
             const inputField = document.getElementById(q.id);
 
-            // AUTO-SKIP MOBILE NO ONLY
             if (q.id === "field_mobile") {
                 currentStep++;
                 askNextQuestion();
@@ -168,63 +166,60 @@
                 recognition.start();
                 recognition.onresult = (event) => {
                     let text = event.results[0][0].transcript;
-                    
-                    // PINCODE LOGIC: Take only last 6 digits
                     if(q.id === "field_pincode") {
                         text = text.replace(/\D/g, '').slice(-6);
                     }
-
                     inputField.value = text;
                     inputField.classList.remove('voice-active');
                     currentStep++;
                     setTimeout(askNextQuestion, 600);
                 };
-                
                 recognition.onerror = () => {
                     recognition.stop();
                     setTimeout(askNextQuestion, 1000);
                 };
             });
         } else {
-            confirmSubmission();
+            // Once all steps are complete, automatically enable and submit
+            autoSubmitByAI();
         }
     }
 
-    function confirmSubmission() {
-        const confirmMsg = "Details filled. Should I submit this complaint now?";
-        document.getElementById('ai_status').innerText = confirmMsg;
-        speak(confirmMsg, () => {
-            recognition.start();
-            recognition.onresult = (event) => {
-                const response = event.results[0][0].transcript.toLowerCase();
-                if (response.includes("yes") || response.includes("submit")) {
-                    document.getElementById('submitBtn').disabled = false; 
-                    submitFinalForm();
-                } else {
-                    document.getElementById('ai_status').innerText = "Ready for manual submission.";
-                    document.getElementById('submitBtn').disabled = false;
-                    document.getElementById('voiceBtn').disabled = false;
-                }
-            };
+    function autoSubmitByAI() {
+        const finishMsg = "All details collected. Submitting your complaint automatically.";
+        document.getElementById('ai_status').innerText = finishMsg;
+        document.getElementById('submitBtn').disabled = false;
+        
+        speak(finishMsg, () => {
+            // Brief delay for user to read status before redirect/alert
+            setTimeout(() => {
+                submitFinalForm();
+            }, 1000);
         });
     }
 
-    function generateCustomID() {
+    function _generateComplaintId() {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ123456789';
         let randomStr = '';
         for (let i = 0; i < 5; i++) {
-            randomStr += chars.charAt(Math.floor(Math.random() * chars.length));
+            const randomIndex = Math.floor(Math.random() * chars.length);
+            randomStr += chars.charAt(randomIndex);
         }
-        return "CP-" + randomStr;
+        return "CP" + randomStr;
     }
 
     function submitFinalForm() {
-        const complaintID = generateCustomID();
+        const complaintID = _generateComplaintId();
+        
         alert("SUCCESS!\n\nYour complaint has been registered.\nComplaint ID: " + complaintID);
         
-        if(window.Toaster){
-            window.Toaster.postMessage("completed");
-        } else {
+        try {
+            if (window.Toaster && window.Toaster.postMessage) {
+                window.Toaster.postMessage("completed");
+            } else {
+                window.location.reload();
+            }
+        } catch (e) {
             window.location.reload();
         }
     }
