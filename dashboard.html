@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Department Dashboard - Grievance Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root { --teal-800: #00695c; --bg-light: #f4f7fe; }
+        body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; }
+        
+        /* Teal Header Sidebar Style */
+        .sidebar { width: 250px; height: 100vh; background: var(--teal-800); position: fixed; color: white; padding-top: 20px; z-index: 1000; }
+        .nav-link { color: rgba(255,255,255,0.8) !important; padding: 15px 25px; font-weight: 500; transition: 0.3s; }
+        .nav-link:hover, .nav-link.active { color: white !important; background: rgba(255,255,255,0.1); border-left: 4px solid #FFD700; }
+        
+        .main-content { margin-left: 250px; padding: 0; }
+        .header-banner { background: var(--teal-800); color: white; padding: 40px 40px 80px 40px; border-radius: 0 0 30px 30px; }
+        
+        /* Cards & UI Elements */
+        .content-container { margin-top: -50px; padding: 0 40px 40px 40px; }
+        .stat-card { background: white; border-radius: 15px; padding: 20px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .complaint-card { background: white; border-radius: 15px; margin-bottom: 15px; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: 0.2s; }
+        .complaint-card:hover { transform: translateY(-2px); }
+        
+        /* Status & Priority Tags (Matching your Flutter Code) */
+        .priority-high { color: #dc3545; background: #fff5f5; border: 1px solid #dc3545; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+        .status-resolved { background: #e8f5e9; color: #2e7d32; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .status-pending { background: #fff3e0; color: #ef6c00; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        
+        .search-box { background: white; border-radius: 12px; border: none; padding: 12px 20px; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        /* Blinking Animation for Re-opened */
+        .blink { animation: blinker 1s linear infinite; background: #dc3545; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; }
+        @keyframes blinker { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="text-center mb-4">
+        <h4 class="fw-bold"><i class="bi bi-lightning-charge-fill text-warning"></i> ADMIN</h4>
+        <p class="small opacity-75">Electricity Department</p>
+        <hr class="mx-3">
+    </div>
+    <nav class="nav flex-column">
+        <a class="nav-link active" href="#"><i class="bi bi-grid-1x2-fill me-2"></i> Dashboard</a>
+        <a class="nav-link mt-auto" href="#" onclick="window.history.back()" style="position: absolute; bottom: 20px; width: 100%;">
+            <i class="bi bi-box-arrow-left me-2"></i> Logout
+        </a>
+    </nav>
+</div>
+
+<div class="main-content">
+    <div class="header-banner">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold m-0">Grievance Overview</h2>
+            <div class="text-end">
+                <p class="m-0 small opacity-75">Welcome back,</p>
+                <p class="m-0 fw-bold">Executive Officer</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-0"><i class="bi bi-search text-teal"></i></span>
+                    <input type="text" class="form-control border-0 py-3" placeholder="Search by ID or Mobile Number...">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-container">
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="text-muted small fw-bold">REGISTERED</div>
+                    <div class="h3 fw-bold text-dark mt-1">1,284</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="text-muted small fw-bold text-warning">PENDING</div>
+                    <div class="h3 fw-bold mt-1">42</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="text-muted small fw-bold text-success">RESOLVED</div>
+                    <div class="h3 fw-bold mt-1">1,210</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="text-muted small fw-bold text-danger">REOPENED</div>
+                    <div class="h3 fw-bold mt-1">32</div>
+                </div>
+            </div>
+        </div>
+
+        <h5 class="fw-bold mb-3 mt-5 text-secondary">Active Grievances</h5>
+
+        <div class="complaint-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-check-circle-fill text-success fs-4 me-3"></i>
+                    <div>
+                        <span class="fw-bold me-2">ID: CPJM44S</span>
+                        <span class="priority-high">HIGH</span>
+                        <span class="ms-2 status-resolved">RESOLVED</span>
+                    </div>
+                </div>
+                <button class="btn btn-sm" data-bs-toggle="collapse" data-bs-target="#detail1">
+                    <i class="bi bi-chevron-down"></i>
+                </button>
+            </div>
+
+            <div class="collapse show mt-3 border-top pt-3" id="detail1">
+                <div class="row small g-2 mb-3">
+                    <div class="col-6"><i class="bi bi-calendar-event me-2 text-teal"></i><strong>Registered:</strong> 25 Dec 2025, 07:57 AM</div>
+                    <div class="col-6"><i class="bi bi-person-badge me-2 text-teal"></i><strong>Applicant:</strong> Suresh Kumar</div>
+                    <div class="col-6"><i class="bi bi-telephone me-2 text-teal"></i><strong>Citizen Contact:</strong> +919999999999</div>
+                    <div class="col-6"><i class="bi bi-check-all me-2 text-teal"></i><strong>Work Resolved:</strong> 30 Dec 2025, 09:15 AM</div>
+                </div>
+                
+                <p class="small text-teal fw-bold mb-1">Problem Description:</p>
+                <p class="small text-muted mb-3">High Voltage fluctuation damaged household appliances emergency support need.</p>
+
+                <p class="small text-teal fw-bold mb-1">UPDATE REMARKS / ACTION TAKEN:</p>
+                <textarea class="form-control form-control-sm mb-3" rows="2" placeholder="Resolved."></textarea>
+                
+                <div class="text-end">
+                    <button class="btn btn-success btn-sm px-4">UPDATE STATUS</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="complaint-card p-3 border-start border-danger border-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-exclamation-triangle-fill text-danger fs-4 me-3"></i>
+                    <div>
+                        <span class="fw-bold me-2">ID: BK928KL</span>
+                        <span class="blink">RE-OPENED</span>
+                    </div>
+                </div>
+                <button class="btn btn-sm" data-bs-toggle="collapse" data-bs-target="#detail2">
+                    <i class="bi bi-chevron-down"></i>
+                </button>
+            </div>
+            <div class="collapse mt-3 border-top pt-3" id="detail2">
+                <p class="small text-danger fw-bold"><i class="bi bi-info-circle me-1"></i> WHY CITIZEN RE-OPENED:</p>
+                <p class="small italic text-muted bg-light p-2 rounded">Power restored but phase line is still unstable and causing flickers.</p>
+                <button class="btn btn-warning btn-sm">START WORK</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

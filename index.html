@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>State Electricity Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <style>
+        :root { --primary: #003366; --accent: #FFD700; --bg: #f8fafc; }
+        body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; }
+        .navbar { background: var(--primary); border-bottom: 4px solid var(--accent); padding: 15px 0; }
+        .nav-link { color: white !important; cursor: pointer; font-weight: 500; margin: 0 10px; }
+        .page-content { display: none; padding: 50px 0; }
+        .active-page { display: block; animation: fadeIn 0.5s ease; }
+
+        .hero { 
+            background: linear-gradient(rgba(0,51,102,0.7), rgba(0,51,102,0.7)), 
+                        url('https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?q=80&w=1600'); 
+            background-size: cover; background-position: center;
+            color: white; padding: 120px 0; border-radius: 0 0 50px 50px;
+        }
+
+        .form-card { 
+            background: white; border-radius: 12px; padding: 35px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 5px solid var(--primary);
+        }
+        .form-control { background-color: #f8fafc !important; border: 1px solid #ced4da; padding: 12px; }
+        
+        .form-control[readonly] {
+            background-color: #eef2f7 !important;
+            border-left: 4px solid var(--primary);
+            cursor: not-allowed;
+        }
+
+        .voice-active { 
+            border: 2px solid #3f51b5 !important; 
+            background-color: #fffde7 !important; 
+            box-shadow: 0 0 15px rgba(63, 81, 181, 0.3);
+        }
+
+        .ai-status-box { background: #003366; color: white; padding: 15px; border-radius: 8px; margin-bottom: 25px; text-align: center; }
+        .mic-btn { background: #3f51b5; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 1.5rem; transition: 0.3s; }
+        
+        .btn-submit { background-color: #28a745; border: none; padding: 12px 40px; font-weight: bold; color: white; border-radius: 8px; transition: 0.3s; }
+        .btn-submit:disabled { background-color: #6c757d; opacity: 0.6; }
+
+        .swal2-popup { border-radius: 20px !important; }
+        .swal2-styled.swal2-confirm { background-color: #003366 !important; padding: 12px 30px; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark shadow">
+    <div class="container">
+        <a class="navbar-brand fw-bold" onclick="showPage('home')">
+            <i class="bi bi-lightning-charge-fill text-warning"></i> ELECTRICITY PORTAL
+        </a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" onclick="showPage('home')">Home</a></li>
+                <li class="nav-item"><a class="nav-link" onclick="showPage('complaint')">Complaint Registration</a></li>
+                <li class="nav-item"><a class="nav-link" href="admin.html">Admin Login</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div id="home" class="page-content active-page">
+    <header class="hero text-center container shadow">
+        <h1 class="display-3 fw-bold">Powering Progress, <br>Hearing Grievances.</h1>
+        <p class="lead mt-3">Smart, voice-activated solutions for electrical infrastructure management.</p>
+    </header>
+</div>
+
+<div id="complaint" class="page-content">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="form-card">
+                    <div class="ai-status-box" id="ai_header">
+                        <i class="bi bi-robot me-2"></i> <span id="ai_status">Click the Mic to start automated filing</span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="fw-bold small">Name</label><input type="text" id="field_name" class="form-control" readonly></div>
+                        <div class="col-md-3"><label class="fw-bold small">Age</label><input type="text" id="field_age" class="form-control" readonly></div>
+                        <div class="col-md-3"><label class="fw-bold small">Gender</label><input type="text" id="field_gender" class="form-control" readonly></div>
+                        <div class="col-md-3"><label class="fw-bold small">Mobile No</label><input type="text" id="field_mobile" class="form-control" readonly maxlength="10"></div>
+                        <div class="col-md-6"><label class="fw-bold small">Address</label><input type="text" id="field_address" class="form-control" readonly></div>
+                        <div class="col-md-3"><label class="fw-bold small">Pincode</label><input type="text" id="field_pincode" class="form-control" readonly maxlength="6"></div>
+                        <div class="col-md-4"><label class="fw-bold small">District</label><input type="text" id="field_district" class="form-control" readonly></div>
+                        <div class="col-md-4"><label class="fw-bold small">Mandal</label><input type="text" id="field_mandal" class="form-control" readonly></div>
+                        <div class="col-md-4"><label class="fw-bold small">State</label><input type="text" id="field_state" class="form-control" readonly></div>
+                        <div class="col-12 mt-4"><label class="fw-bold small">Complaint Description</label><textarea class="form-control" id="field_complaint" rows="4" readonly></textarea></div>
+                    </div>
+                    
+                    <div class="d-flex flex-column align-items-center mt-5">
+                        <button class="mic-btn shadow mb-3" onclick="startVoiceAI()" id="voiceBtn">
+                            <i class="bi bi-mic-fill"></i>
+                        </button>
+                        <button class="btn-submit shadow" id="submitBtn" onclick="submitFinalForm()" disabled>
+                            SUBMIT
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    {FB_CONFIG}
+    
+    if (typeof firebaseConfig !== 'undefined') {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+
+    const questions = [
+        { id: "field_name", prompt: "Tell me your full name." },
+        { id: "field_age", prompt: "How old are you?" },
+        { id: "field_gender", prompt: "What is your gender?" },
+        { id: "field_mobile", prompt: "Tell me your mobile number." },
+        { id: "field_address", prompt: "What is your address?" },
+        { id: "field_pincode", prompt: "What is your area pincode?" },
+        { id: "field_district", prompt: "Which district do you live in?" },
+        { id: "field_mandal", prompt: "What is your mandal?" },
+        { id: "field_state", prompt: "Which state are you from?" },
+        { id: "field_complaint", prompt: "Describe your electricity complaint." }
+    ];
+
+    let currentStep = 0;
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'en-US';
+
+    function showPage(pageId) {
+        document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
+        document.getElementById(pageId).classList.add('active-page');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        let mobileFromUrl = urlParams.get('phone');
+        if (mobileFromUrl) {
+            mobileFromUrl = mobileFromUrl.replace(/\D/g, '').slice(-10);
+            const mobileInput = document.getElementById('field_mobile');
+            mobileInput.value = mobileFromUrl;
+            mobileInput.readOnly = true;
+        }
+    });
+
+    function startVoiceAI() {
+        currentStep = 0;
+        document.getElementById('voiceBtn').disabled = true;
+        askNextQuestion();
+    }
+
+    function askNextQuestion() {
+        if (currentStep < questions.length) {
+            const q = questions[currentStep];
+            const inputField = document.getElementById(q.id);
+
+            if (q.id === "field_mobile") {
+                currentStep++;
+                askNextQuestion();
+                return;
+            }
+
+            inputField.classList.add('voice-active');
+            document.getElementById('ai_status').innerText = "AI asking: " + q.prompt;
+            
+            speak(q.prompt, () => {
+                recognition.start();
+                recognition.onresult = (event) => {
+                    let text = event.results[0][0].transcript;
+                    if(q.id === "field_pincode") {
+                        text = text.replace(/\D/g, '').slice(-6);
+                    }
+                    inputField.value = text;
+                    inputField.classList.remove('voice-active');
+                    currentStep++;
+                    setTimeout(askNextQuestion, 600);
+                };
+                recognition.onerror = () => {
+                    recognition.stop();
+                    setTimeout(askNextQuestion, 1000);
+                };
+            });
+        } else {
+            autoSubmitByAI();
+        }
+    }
+
+    function autoSubmitByAI() {
+        const finishMsg = "Thank you. All details have been collected. Submitting your complaint now.";
+        document.getElementById('ai_status').innerText = finishMsg;
+        document.getElementById('submitBtn').disabled = false;
+        
+        speak(finishMsg, () => {
+            setTimeout(() => {
+                submitFinalForm();
+            }, 800);
+        });
+    }
+
+    function _generateComplaintId() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ123456789';
+        let randomStr = '';
+        for (let i = 0; i < 5; i++) {
+            const randomIndex = Math.floor(Math.random() * chars.length);
+            randomStr += chars.charAt(randomIndex);
+        }
+        return "CP" + randomStr;
+    }
+
+    function submitFinalForm() {
+        const complaintID = _generateComplaintId();
+        
+        const complaintData = {
+            complaintId: complaintID,
+            name: document.getElementById('field_name').value,
+            age: document.getElementById('field_age').value,
+            gender: document.getElementById('field_gender').value,
+            mobile: document.getElementById('field_mobile').value,
+            address: document.getElementById('field_address').value,
+            pincode: document.getElementById('field_pincode').value,
+            district: document.getElementById('field_district').value,
+            mandal: document.getElementById('field_mandal').value,
+            state: document.getElementById('field_state').value,
+            description: document.getElementById('field_complaint').value,
+            department: "Electricity",
+            status: "Pending",
+            timestamp: Date.now()
+        };
+
+        db.ref('complaints/' + complaintID).set(complaintData)
+        .then(() => {
+            Swal.fire({
+                title: 'Registration Successful!',
+                html: `
+                    <div style="text-align: center;">
+                        <p>Your complaint has been registered successfully.</p>
+                        <div style="background: #f0f4f8; padding: 15px; border-radius: 10px; border: 1px dashed #003366; margin: 15px 0;">
+                            <span style="font-size: 0.8rem; color: #666;">COMPLAINT ID</span><br>
+                            <strong style="font-size: 1.4rem; color: #003366;">${complaintID}</strong>
+                        </div>
+                    </div>
+                `,
+                icon: 'success',
+                confirmButtonText: 'GO TO DASHBOARD',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    try {
+                        if (window.Toaster && window.Toaster.postMessage) {
+                            window.Toaster.postMessage("completed");
+                        } 
+                        else if (window.opener) {
+                            window.opener.postMessage("completed", "*");
+                            window.close(); 
+                        }
+                        else {
+                            window.location.reload();
+                        }
+                    } catch (e) {
+                        window.location.reload();
+                    }
+                }
+            });
+        })
+        .catch((error) => {
+            Swal.fire('Error', 'Failed to save to database: ' + error.message, 'error');
+        });
+    }
+
+    function speak(text, callback) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.onend = callback;
+        window.speechSynthesis.speak(msg);
+    }
+</script>
+</body>
+</html> 
+
