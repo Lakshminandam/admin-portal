@@ -119,9 +119,13 @@
 <script>
     // GITHUB_ACTION_PLACEHOLDER
     
+    // This part checks if the robot has injected the config yet
     if (typeof firebaseConfig !== 'undefined') {
         firebase.initializeApp(firebaseConfig);
+    } else {
+        console.log("Waiting for GitHub Action to inject Firebase Config...");
     }
+    
     const db = firebase.database();
 
     const questions = [
@@ -290,4 +294,5 @@
 </script>
 </body>
 </html> 
+
 
