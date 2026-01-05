@@ -100,7 +100,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
 const firebaseConfig = {
     apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
@@ -116,7 +115,6 @@ const firebaseConfig = {
     let auth, db;
 
     function initFirebase() {
-        // If GitHub Action injected the config, firebaseConfig will exist
         if (typeof firebaseConfig !== 'undefined') {
             if (!firebase.apps.length) {
                 firebase.initializeApp(firebaseConfig);
@@ -126,7 +124,7 @@ const firebaseConfig = {
             setupAuthListener();
         } else {
             console.error("Firebase config not found.");
-            document.getElementById('complaintsTable').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Configuration Error: Firebase keys not found in this environment.</td></tr>';
+            document.getElementById('complaintsTable').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Configuration Error: Keys not found.</td></tr>';
         }
     }
 
@@ -195,8 +193,7 @@ const firebaseConfig = {
             });
             updateCounters(counts);
         }, (error) => {
-            console.error("Firebase Read Error:", error);
-            tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Permission Denied. Please check Firebase Rules.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Permission Denied. Check Rules.</td></tr>';
         });
     }
 
