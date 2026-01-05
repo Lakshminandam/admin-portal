@@ -23,7 +23,6 @@
         .table thead { background: #f8fafc; color: #64748b; font-size: 0.8rem; text-transform: uppercase; }
         .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: white; }
         
-        /* Status Colors */
         .bg-registered { background-color: #6c757d; }
         .bg-progress { background-color: #0d6efd; }
         .bg-resolved { background-color: #198754; }
@@ -40,7 +39,7 @@
             <h5 class="text-center mb-4 fw-bold"><i class="bi bi-lightning-charge-fill text-warning"></i> ADMIN</h5>
             <nav class="nav flex-column">
                 <a class="nav-link active" href="#"><i class="bi bi-grid-1x2 me-2"></i> Complaints</a>
-                <a class="nav-link" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i> Logout</a>
+                <a class="nav-link" href="javascript:void(0)" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i> Logout</a>
             </nav>
         </div>
 
@@ -101,6 +100,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="config.js"></script>
 <script>
 // GITHUB_ACTION_PLACEHOLDER
 
@@ -136,7 +136,6 @@
         
         db.ref('complaints').on('value', (snapshot) => {
             tableBody.innerHTML = '';
-            // Only tracking the 4 specific statuses
             let counts = { registered: 0, progress: 0, resolved: 0, reopened: 0 };
             
             if (!snapshot.exists()) {
@@ -208,7 +207,12 @@
     }
 
     function logout() {
-        auth.signOut().then(() => { window.location.href = 'admin.html'; });
+        auth.signOut().then(() => { 
+            window.location.href = 'index.html'; 
+        }).catch((error) => {
+            console.error("Logout Error:", error);
+            window.location.href = 'index.html';
+        });
     }
 
     initFirebase();
