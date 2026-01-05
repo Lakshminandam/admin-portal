@@ -12,118 +12,112 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <style>
-        :root { --primary: #001529; --accent: #FFD700; --bg: #f4f7f9; --teal-dark: #008080; }
+        :root { --primary: #003366; --accent: #FFD700; --bg: #f1f5f9; --teal-dark: #00695c; }
         body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; }
+        .sidebar { background: var(--primary); min-height: 100vh; color: white; padding-top: 20px; position: fixed; width: inherit; }
+        .nav-link { color: rgba(255,255,255,0.8); transition: 0.3s; margin: 5px 15px; border-radius: 8px; text-decoration: none; display: block; padding: 10px; }
+        .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.1); color: white; }
+        .main-content { padding: 30px; margin-left: 16.666667%; }
+        .stat-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-bottom: 4px solid var(--primary); }
+        .data-card { background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
+        .table thead { background: #f8fafc; color: #64748b; font-size: 0.8rem; text-transform: uppercase; }
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: white; text-transform: uppercase; }
         
-        .sidebar { background: var(--primary); min-height: 100vh; color: white; padding-top: 20px; position: fixed; width: 240px; }
-        .nav-link { color: #a6adb4; transition: 0.3s; margin: 5px 15px; border-radius: 4px; text-decoration: none; display: block; padding: 12px; font-size: 14px; }
-        .nav-link:hover, .nav-link.active { background: #1890ff; color: white; }
-        .main-content { padding: 40px; margin-left: 240px; }
+        /* Status Colors */
+        .bg-pending { background-color: #d32f2f; }
+        .bg-inprogress { background-color: #ef6c00; }
+        .bg-resolved { background-color: #2e7d32; }
+        .bg-reopened { background-color: #000000; }
+
+        /* Detail Modal Styles */
+        .modal-content { border-radius: 15px; border: none; }
+        .detail-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.85rem; }
+        .detail-item i { color: var(--teal-dark); margin-right: 10px; font-size: 1rem; }
+        .description-box { background: #fdfdfd; padding: 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; }
+        .priority-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+
+        /* Flutter Style Buttons */
+        .btn-start { background-color: #ef6c00; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
+        .btn-resolve { background-color: #2e7d32; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
         
-        .stat-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-bottom: 4px solid #ddd; }
-        .data-card { background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; }
-        
-        .table thead { background: #fafafa; color: #262626; font-size: 0.85rem; font-weight: bold; }
-        .status-pill { padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; text-transform: uppercase; }
-
-        .modal-content { border-radius: 12px; border: none; }
-        .status-banner { width: 100%; padding: 8px; border-radius: 20px; text-align: center; font-weight: bold; font-size: 11px; margin-bottom: 20px; text-transform: uppercase; border: 1px solid; }
-        .banner-pending { background: #fff1f0; color: #cf1322; border-color: #ffa39e; }
-        .banner-inprogress { background: #fff7e6; color: #d46b08; border-color: #ffd591; }
-        .banner-resolved { background: #f6ffed; color: #389e0d; border-color: #b7eb8f; }
-
-        .detail-row { display: flex; align-items: center; margin-bottom: 12px; font-size: 13px; color: #555; }
-        .detail-row i { color: var(--teal-dark); margin-right: 12px; font-size: 1.1rem; }
-        
-        .section-label { color: #008080; font-weight: bold; font-size: 11px; text-transform: uppercase; margin-top: 15px; display: block; }
-        .description-text { font-size: 14px; color: #333; margin-top: 5px; }
-        .remarks-area { border: 1.5px solid #d9d9d9; border-radius: 8px; padding: 12px; font-size: 14px; width: 100%; margin-top: 10px; }
-
-        .btn-flutter-start { background-color: #ff8c00; color: white; border: none; border-radius: 25px; padding: 8px 25px; font-weight: bold; font-size: 13px; box-shadow: 0 4px 6px rgba(255,140,0,0.3); }
-        .btn-flutter-resolve { background-color: #388e3c; color: white; border: none; border-radius: 25px; padding: 8px 25px; font-weight: bold; font-size: 13px; box-shadow: 0 4px 6px rgba(56,142,60,0.3); }
-
-        @media (max-width: 768px) { .sidebar { width: 0; display: none; } .main-content { margin-left: 0; } }
+        @media (max-width: 768px) { .sidebar { position: relative; min-height: auto; } .main-content { margin-left: 0; } }
     </style>
 </head>
 <body>
 
-<div class="sidebar shadow">
-    <h5 class="text-center mb-4 fw-bold text-white"><i class="bi bi-lightning-charge-fill text-warning"></i> ADMIN</h5>
-    <nav class="nav flex-column">
-        <a class="nav-link active" href="#"><i class="bi bi-list-task me-2"></i> Complaints</a>
-        <a class="nav-link" href="javascript:void(0)" onclick="logout()"><i class="bi bi-power me-2"></i> Logout</a>
-    </nav>
-</div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-2 sidebar d-none d-md-block shadow">
+            <h5 class="text-center mb-4 fw-bold"><i class="bi bi-lightning-charge-fill text-warning"></i> ADMIN</h5>
+            <nav class="nav flex-column">
+                <a class="nav-link active" href="#"><i class="bi bi-grid-1x2 me-2"></i> Complaints</a>
+                <a class="nav-link" href="javascript:void(0)" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i> Logout</a>
+            </nav>
+        </div>
 
-<div class="main-content">
-    <h2 class="fw-bold mb-4">Grievance Dashboard</h2>
+        <div class="col-md-10 main-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold">Grievance Dashboard</h3>
+                <div id="adminEmail" class="fw-bold text-primary"></div>
+            </div>
 
-    <div class="row g-3 mb-5">
-        <div class="col-md-3"><div class="stat-card" style="border-bottom-color: #cf1322;"><div class="small text-muted fw-bold">Pending</div><h2 id="pendingCount">0</h2></div></div>
-        <div class="col-md-3"><div class="stat-card" style="border-bottom-color: #d46b08;"><div class="small text-muted fw-bold">In Progress</div><h2 id="progressCount">0</h2></div></div>
-        <div class="col-md-3"><div class="stat-card" style="border-bottom-color: #389e0d;"><div class="small text-muted fw-bold">Resolved</div><h2 id="resolvedCount">0</h2></div></div>
-        <div class="col-md-3"><div class="stat-card" style="border-bottom-color: #000;"><div class="small text-muted fw-bold">Reopened</div><h2 id="reopenedCount">0</h2></div></div>
-    </div>
+            <div class="row g-3 mb-4 text-center">
+                <div class="col-md-3"><div class="stat-card" style="border-bottom-color: #d32f2f;"><div class="small fw-bold">Pending</div><h2 id="pendingCount">0</h2></div></div>
+                <div class="col-md-3"><div class="stat-card" style="border-bottom-color: #ef6c00;"><div class="small fw-bold">In Progress</div><h2 id="progressCount">0</h2></div></div>
+                <div class="col-md-3"><div class="stat-card" style="border-bottom-color: #2e7d32;"><div class="small fw-bold">Resolved</div><h2 id="resolvedCount">0</h2></div></div>
+                <div class="col-md-3"><div class="stat-card" style="border-bottom-color: #000;"><div class="small fw-bold">Reopened</div><h2 id="reopenedCount">0</h2></div></div>
+            </div>
 
-    <div class="data-card">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead>
-                    <tr>
-                        <th class="ps-4">ID</th>
-                        <th>CITIZEN NAME</th>
-                        <th>MOBILE</th>
-                        <th>DISTRICT</th>
-                        <th>PRIORITY</th>
-                        <th class="text-end pe-4">STATUS</th>
-                    </tr>
-                </thead>
-                <tbody id="complaintsTable">
-                    <tr><td colspan="6" class="text-center py-5 text-muted">Searching for complaints...</td></tr>
-                </tbody>
-            </table>
+            <div class="data-card">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">ID</th>
+                                <th>Citizen Name</th>
+                                <th>Mobile</th>
+                                <th>District</th>
+                                <th>Priority</th>
+                                <th>Status</th> </tr>
+                        </thead>
+                        <tbody id="complaintsTable">
+                            <tr><td colspan="6" class="text-center py-4 text-muted">Loading grievances...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="detailsModal" tabindex="-1">
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content shadow-lg">
-            <div class="modal-header border-0 pb-0">
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-exclamation-circle text-danger me-2 fs-4"></i>
-                    <h5 class="fw-bold mb-0">ID: <span id="m-id"></span></h5>
-                    <span id="m-priority" class="ms-2 badge border text-warning" style="font-size: 10px;">MEDIUM</span>
+            <div class="modal-header">
+                <h6 class="modal-title fw-bold mb-0" id="modalTitle">Complaint Details</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalDataContent">
+                    </div>
+                <div class="mt-3">
+                    <label class="fw-bold small mb-1" style="color: #00796b;">OFFICER REMARKS:</label>
+                    <textarea id="officerRemarks" class="form-control" rows="4" placeholder="Write your comments here..."></textarea>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body px-4">
-                <div id="m-banner" class="status-banner banner-pending">PENDING</div>
-
-                <div class="detail-row"><i class="bi bi-calendar-check"></i> <strong>Registered:</strong>&nbsp;<span id="m-reg"></span></div>
-                <div class="detail-row" id="m-assign-row"><i class="bi bi-person-check"></i> <strong>Assigned At:</strong>&nbsp;<span id="m-assign"></span></div>
-                <div class="detail-row" id="m-resolve-row" style="display:none;"><i class="bi bi-check-all"></i> <strong>Resolved At:</strong>&nbsp;<span id="m-resolve"></span></div>
-                <div class="detail-row"><i class="bi bi-telephone"></i> <strong>Citizen Contact:</strong>&nbsp;<span id="m-contact"></span></div>
-                
-                <span class="section-label">Problem Description:</span>
-                <p id="m-desc" class="description-text"></p>
-
-                <hr class="my-4">
-
-                <span class="section-label">Update Remarks / Action Taken:</span>
-                <textarea id="officerRemarks" class="remarks-area" rows="3"></textarea>
-            </div>
-            <div class="modal-footer border-0 px-4 pb-4">
-                <button id="startWorkBtn" class="btn-flutter-start" onclick="updateStatus('in progress')">
-                    <i class="bi bi-caret-right-fill"></i> START WORK
+            <div class="modal-footer border-0 d-flex justify-content-end gap-3 pb-4 px-4">
+                <button id="startWorkBtn" class="btn-start" onclick="updateStatus('in progress')">
+                    <i class="bi bi-play-fill me-1"></i> START WORK
                 </button>
-                <button id="resolveBtn" class="btn-flutter-resolve" onclick="updateStatus('resolved')">
-                    <i class="bi bi-check-circle"></i> RESOLVE
+                <button id="resolveBtn" class="btn-resolve" onclick="updateStatus('resolved')">
+                    <i class="bi bi-check2-circle me-1"></i> RESOLVE
                 </button>
             </div>
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const firebaseConfig = {
     apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
@@ -135,7 +129,6 @@ const firebaseConfig = {
     appId: "1:138166783170:web:ae54b798e700d4a03e7f5b",
     measurementId: "G-K9KERE9NMT"
   };
-
     let auth, db, activeKey = null;
     const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
 
@@ -143,15 +136,19 @@ const firebaseConfig = {
         if (typeof firebaseConfig !== 'undefined') {
             if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
             auth = firebase.auth(); db = firebase.database();
-            auth.onAuthStateChanged((user) => {
-                if (user) { loadComplaints(); }
-                else { window.location.href = 'admin.html'; }
-            });
+            setupAuthListener();
         }
     }
 
+    function setupAuthListener() {
+        auth.onAuthStateChanged((user) => {
+            if (user) { loadComplaints(); }
+            else { window.location.href = 'admin.html'; }
+        });
+    }
+
     function formatTime(ts) {
-        if (!ts) return "---";
+        if (!ts) return "Not available";
         return new Date(ts).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
     }
 
@@ -167,20 +164,22 @@ const firebaseConfig = {
                 const status = (data.status || 'pending').toLowerCase();
                 const p = (data.priority || 'Medium').toUpperCase();
                 
-                let bClass = 'bg-danger';
-                if (status === 'in progress') { counts.progress++; bClass = 'bg-warning text-dark'; }
-                else if (status === 'resolved') { counts.resolved++; bClass = 'bg-success'; }
-                else if (status.includes('reopen')) { counts.reopened++; bClass = 'bg-dark'; }
-                else { counts.pending++; }
+                let bClass = 'bg-pending';
+                if (status === 'in progress') { counts.progress++; bClass = 'bg-inprogress'; }
+                else if (status === 'resolved') { counts.resolved++; bClass = 'bg-resolved'; }
+                else if (status === 'reopened' || status === 're-opened') { counts.reopened++; bClass = 'bg-reopened'; }
+                else { counts.pending++; bClass = 'bg-pending'; }
+
+                const pColor = p === 'HIGH' ? '#dc3545' : (p === 'LOW' ? '#2e7d32' : '#f57c00');
 
                 tableBody.innerHTML += `
                     <tr onclick="viewDetail('${key}')" style="cursor: pointer;">
                         <td class="ps-4 fw-bold text-primary">${data.complaintId || key}</td>
-                        <td>${data.name || '---'}</td>
-                        <td>${data.mobile || '---'}</td>
-                        <td>${data.district || '---'}</td>
-                        <td><span class="badge border text-muted" style="font-size:10px;">${p}</span></td>
-                        <td class="text-end pe-4"><span class="status-pill ${bClass}">${status}</span></td>
+                        <td><div class="fw-bold">${data.name || 'N/A'}</div></td>
+                        <td>${data.mobile || 'N/A'}</td>
+                        <td>${data.district || 'N/A'}</td>
+                        <td><span class="priority-tag" style="background: ${pColor}15; color: ${pColor}; border: 1px solid ${pColor}">${p}</span></td>
+                        <td><span class="status-badge ${bClass}">${status}</span></td>
                     </tr>`;
             });
 
@@ -197,44 +196,44 @@ const firebaseConfig = {
             const d = snap.val();
             const status = (d.status || 'pending').toLowerCase();
             
-            document.getElementById('m-id').innerText = d.complaintId || key;
-            document.getElementById('m-priority').innerText = (d.priority || 'Medium').toUpperCase();
+            document.getElementById('modalTitle').innerText = "Complaint ID: " + (d.complaintId || key);
             
-            const banner = document.getElementById('m-banner');
-            banner.innerText = status;
-            banner.className = 'status-banner banner-' + (status === 'in progress' ? 'inprogress' : status === 'resolved' ? 'resolved' : 'pending');
-
-            document.getElementById('m-reg').innerText = formatTime(d.createdAt || d.timestamp);
-            document.getElementById('m-assign').innerText = formatTime(d.work_started_at);
-            document.getElementById('m-contact').innerText = d.mobile || 'N/A';
-            document.getElementById('m-desc').innerText = d.description || "No description provided.";
-            
-            document.getElementById('m-resolve-row').style.display = d.resolved_at ? 'flex' : 'none';
-            if(d.resolved_at) document.getElementById('m-resolve').innerText = formatTime(d.resolved_at);
-
-            const remarksField = document.getElementById('officerRemarks');
-            remarksField.value = d.officer_remarks || "Officer has acknowledged and started work on this grievance.";
-            remarksField.disabled = (status === 'resolved');
+            document.getElementById('officerRemarks').value = d.officer_remarks || "Officer has acknowledged and started work on this grievance.";
+            document.getElementById('officerRemarks').disabled = (status === 'resolved');
 
             document.getElementById('startWorkBtn').style.display = (status === 'pending') ? 'block' : 'none';
             document.getElementById('resolveBtn').style.display = (status !== 'resolved') ? 'block' : 'none';
 
+            let html = `
+                <div class="detail-item"><i class="bi bi-calendar-event"></i><span><strong>Registered:</strong> ${formatTime(d.createdAt || d.timestamp)}</span></div>
+                ${d.work_started_at ? `<div class="detail-item"><i class="bi bi-play-circle-fill"></i><span><strong>Work Started:</strong> ${formatTime(d.work_started_at)}</span></div>` : ''}
+                ${d.resolved_at ? `<div class="detail-item"><i class="bi bi-check-circle-fill"></i><span><strong>Resolved:</strong> ${formatTime(d.resolved_at)}</span></div>` : ''}
+                <div class="detail-item"><i class="bi bi-telephone"></i><span><strong>Citizen Contact:</strong> ${d.mobile || 'N/A'}</span></div>
+                <div class="description-box"><strong>Description:</strong><br>${d.description || "N/A"}</div>
+            `;
+            document.getElementById('modalDataContent').innerHTML = html;
             detailsModal.show();
         });
     }
 
     function updateStatus(newStatus) {
         const remarks = document.getElementById('officerRemarks').value.trim();
-        if (newStatus === 'resolved' && (remarks === "" || remarks.includes("Officer has acknowledged"))) {
-            alert("Please provide a custom action comment before resolving.");
+        if (newStatus === 'resolved' && remarks === "") {
+            alert("Please provide remarks before resolving.");
             return;
         }
 
-        let updates = { status: newStatus, officer_remarks: remarks };
+        let updates = {
+            status: newStatus,
+            officer_remarks: remarks
+        };
+
         if (newStatus === 'in progress') updates['work_started_at'] = firebase.database.ServerValue.TIMESTAMP;
         if (newStatus === 'resolved') updates['resolved_at'] = firebase.database.ServerValue.TIMESTAMP;
 
-        db.ref('complaints/' + activeKey).update(updates).then(() => { detailsModal.hide(); });
+        db.ref('complaints/' + activeKey).update(updates).then(() => {
+            detailsModal.hide();
+        });
     }
 
     function logout() { auth.signOut().then(() => { window.location.href = 'index.html'; }); }
