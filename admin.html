@@ -10,10 +10,10 @@
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <style>
         :root { --primary: #2563eb; --bg-overlay: rgba(15, 23, 42, 0.7); }
+        
         body { 
             background: linear-gradient(var(--bg-overlay), var(--bg-overlay)), 
                         url('https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?q=80&w=1600');
@@ -24,8 +24,8 @@
             align-items: center;
             justify-content: center;
             font-family: 'Segoe UI', sans-serif;
-            margin: 0;
         }
+
         .login-modal {
             background: white;
             width: 100%;
@@ -35,31 +35,142 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             animation: modalSlideUp 0.5s ease-out;
         }
-        .tabs-container { padding: 20px 25px 10px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: center; }
-        .nav-link { border: none !important; color: #64748b; font-weight: 700; padding: 10px 20px; position: relative; font-size: 1.2rem; text-decoration: none; }
-        .nav-link.active { color: var(--primary) !important; }
-        .nav-link.active::after { content: ''; position: absolute; bottom: 0; left: 10%; right: 10%; height: 4px; background: var(--primary); border-radius: 10px; }
+
+        .tabs-container {
+            padding: 20px 25px 10px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: center;
+        }
+
+        .nav-tabs { border: none; }
+        .nav-link {
+            border: none !important;
+            color: #64748b;
+            font-weight: 700;
+            padding: 10px 20px;
+            position: relative;
+            font-size: 1.2rem; 
+        }
+        .nav-link.active {
+            color: var(--primary) !important;
+            background: none !important;
+        }
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 10%;
+            right: 10%;
+            height: 4px;
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
         .form-body { padding: 25px; }
-        .input-group-custom { position: relative; margin-bottom: 20px; }
-        .input-group-custom i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--primary); font-size: 1.1rem; z-index: 10; }
-        .form-label { font-weight: 700; color: #334155; font-size: 0.85rem; margin-bottom: 8px; display: block; }
-        .form-control-custom { background-color: #f8fafc; border: 1px solid #f1f5f9; padding: 12px 12px 12px 45px; border-radius: 12px; width: 100%; transition: all 0.3s; color: #1e293b; box-sizing: border-box; }
-        .form-control-custom:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); background-color: white; }
-        .captcha-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px 20px; border-radius: 10px; font-family: 'Courier New', Courier, monospace; font-weight: 800; font-style: italic; font-size: 1.4rem; letter-spacing: 5px; color: #1e293b; display: inline-block; user-select: none; }
-        .refresh-btn { color: var(--primary); font-size: 1.3rem; cursor: pointer; transition: transform 0.3s; margin-left: 15px; }
+
+        .input-group-custom {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-group-custom i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary);
+            font-size: 1.1rem;
+            z-index: 10;
+        }
+
+        .form-label { font-weight: 700; color: #334155; font-size: 0.85rem; margin-bottom: 8px; }
+
+        .form-control-custom {
+            background-color: #f8fafc;
+            border: 1px solid #f1f5f9;
+            padding: 12px 12px 12px 45px;
+            border-radius: 12px;
+            width: 100%;
+            transition: all 0.3s;
+            color: #1e293b;
+        }
+
+        .form-control-custom:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+            background-color: white;
+        }
+
+        .captcha-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 800;
+            font-style: italic;
+            font-size: 1.4rem;
+            letter-spacing: 5px;
+            color: #1e293b;
+            display: inline-block;
+            user-select: none;
+        }
+
+        .refresh-btn {
+            color: var(--primary);
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: transform 0.3s;
+            margin-left: 15px;
+        }
         .refresh-btn:hover { transform: rotate(180deg); }
-        .modal-footer-custom { padding: 0 25px 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .btn-login { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 700; transition: 0.3s; cursor: pointer; }
+
+        .modal-footer-custom {
+            padding: 0 25px 25px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn-login {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 700;
+            transition: 0.3s;
+        }
         .btn-login:hover { background: #1d4ed8; transform: translateY(-2px); }
-        .btn-close-custom { background: white; color: #ef4444; border: 1px solid #fee2e2; padding: 12px; border-radius: 12px; font-weight: 700; transition: 0.3s; cursor: pointer; }
-        @keyframes modalSlideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+        .btn-close-custom {
+            background: white;
+            color: #ef4444;
+            border: 1px solid #fee2e2;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 700;
+            transition: 0.3s;
+        }
+        .btn-close-custom:hover { background: #fef2f2; }
+
+        @keyframes modalSlideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
 
 <div class="login-modal">
     <div class="tabs-container">
-        <a class="nav-link active" href="#">Admin Login</a>
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link active" href="#">Admin Login</a>
+            </li>
+        </ul>
     </div>
 
     <div class="form-body">
@@ -86,7 +197,7 @@
                 <input type="text" id="captchaInput" class="form-control-custom" placeholder="Verify Captcha">
             </div>
             <div class="d-flex align-items-center justify-content-center">
-                <div class="captcha-box" id="captcha">-----</div>
+                <div class="captcha-box" id="captcha">F83HD</div>
                 <i class="bi bi-arrow-clockwise refresh-btn" onclick="refreshCaptcha()"></i>
             </div>
         </div>
@@ -101,27 +212,13 @@
 <script>
 // GITHUB_ACTION_PLACEHOLDER
 
-    let auth;
-
-    function initFirebase() {
-        if (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey !== undefined) {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
-            }
-            auth = firebase.auth();
-            console.log("Firebase initialized.");
-        } else {
-            console.error("Firebase Config not found!");
-            Swal.fire({
-                icon: 'error',
-                title: 'Configuration Error',
-                text: 'Firebase keys were not injected. Check GitHub Actions.',
-                confirmButtonText: 'OK'
-            });
+    if (typeof firebaseConfig !== 'undefined') {
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
         }
     }
-
-    initFirebase();
+    
+    const auth = firebase.auth();
 
     function refreshCaptcha() {
         const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -135,11 +232,6 @@
     window.onload = refreshCaptcha;
 
     async function handleLogin() {
-        if (!auth) {
-            initFirebase();
-            if (!auth) return;
-        }
-
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const captchaInput = document.getElementById('captchaInput').value;
@@ -174,10 +266,8 @@
         } catch (error) {
             loginBtn.innerText = "LOGIN";
             loginBtn.disabled = false;
-            console.error(error);
             let msg = "Invalid email or password";
             if (error.code === 'auth/user-not-found') msg = "User not registered";
-            if (error.code === 'auth/wrong-password') msg = "Incorrect password";
             Swal.fire('Login Failed', msg, 'error');
         }
     }
