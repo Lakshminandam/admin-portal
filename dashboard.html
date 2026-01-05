@@ -23,6 +23,7 @@
         .table thead { background: #f8fafc; color: #64748b; font-size: 0.8rem; text-transform: uppercase; }
         .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: white; text-transform: uppercase; }
         
+        /* Status Colors */
         .bg-pending { background-color: #d32f2f; }
         .bg-inprogress { background-color: #ef6c00; }
         .bg-resolved { background-color: #2e7d32; }
@@ -35,14 +36,10 @@
         .description-box { background: #fdfdfd; padding: 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; }
         .priority-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
 
-        .blink-reopened { background-color: #d32f2f; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; animation: blinker 0.8s linear infinite; margin-left: 8px; }
-        @keyframes blinker { 50% { opacity: 0; } }
-
         /* Flutter Style Buttons */
-        .btn-start { background-color: #ef6c00; color: white; border-radius: 20px; padding: 8px 25px; border: none; font-weight: bold; font-size: 13px; }
-        .btn-resolve { background-color: #2e7d32; color: white; border-radius: 20px; padding: 8px 25px; border: none; font-weight: bold; font-size: 13px; }
-        .btn-start:hover, .btn-resolve:hover { filter: brightness(90%); }
-
+        .btn-start { background-color: #ef6c00; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
+        .btn-resolve { background-color: #2e7d32; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
+        
         @media (max-width: 768px) { .sidebar { position: relative; min-height: auto; } .main-content { margin-left: 0; } }
     </style>
 </head>
@@ -65,30 +62,10 @@
             </div>
 
             <div class="row g-3 mb-4 text-center">
-                <div class="col-md-3">
-                    <div class="stat-card" style="border-bottom-color: #d32f2f;">
-                        <div class="text-muted small fw-bold">Pending</div>
-                        <h2 class="fw-bold mb-0 text-danger" id="pendingCount">0</h2>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card" style="border-bottom-color: #ef6c00;">
-                        <div class="text-muted small fw-bold">In Progress</div>
-                        <h2 class="fw-bold mb-0 text-warning" id="progressCount">0</h2>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card" style="border-bottom-color: #2e7d32;">
-                        <div class="text-muted small fw-bold">Resolved</div>
-                        <h2 class="fw-bold mb-0 text-success" id="resolvedCount">0</h2>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card" style="border-bottom-color: #000;">
-                        <div class="text-muted small fw-bold">Reopened</div>
-                        <h2 class="fw-bold mb-0 text-dark" id="reopenedCount">0</h2>
-                    </div>
-                </div>
+                <div class="col-md-3"><div class="stat-card" style="border-bottom-color: #d32f2f;"><div class="small fw-bold">Pending</div><h2 id="pendingCount">0</h2></div></div>
+                <div class="col-md-3"><div class="stat-card" style="border-bottom-color: #ef6c00;"><div class="small fw-bold">In Progress</div><h2 id="progressCount">0</h2></div></div>
+                <div class="col-md-3"><div class="stat-card" style="border-bottom-color: #2e7d32;"><div class="small fw-bold">Resolved</div><h2 id="resolvedCount">0</h2></div></div>
+                <div class="col-md-3"><div class="stat-card" style="border-bottom-color: #000;"><div class="small fw-bold">Reopened</div><h2 id="reopenedCount">0</h2></div></div>
             </div>
 
             <div class="data-card">
@@ -101,8 +78,7 @@
                                 <th>Mobile</th>
                                 <th>District</th>
                                 <th>Priority</th>
-                                <th>Status</th>
-                            </tr>
+                                <th>Status</th> </tr>
                         </thead>
                         <tbody id="complaintsTable">
                             <tr><td colspan="6" class="text-center py-4 text-muted">Loading grievances...</td></tr>
@@ -118,21 +94,25 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content shadow-lg">
             <div class="modal-header">
-                <div class="d-flex align-items-center">
-                    <h6 class="modal-title fw-bold mb-0" id="modalTitle">ID: Loading...</h6>
-                    <div id="reopenedBadgeContainer"></div>
-                </div>
+                <h6 class="modal-title fw-bold mb-0" id="modalTitle">Complaint Details</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div id="modalContent"></div>
+                <div id="modalDataContent">
+                    </div>
                 <div class="mt-3">
-                    <label class="fw-bold small mb-1" style="color: #00796b; font-size: 11px;">UPDATE REMARKS / ACTION TAKEN:</label>
-                    <textarea id="officerRemarks" class="form-control" rows="4" style="font-size: 14px; border: 1px solid #ced4da;"></textarea>
+                    <label class="fw-bold small mb-1" style="color: #00796b;">OFFICER REMARKS:</label>
+                    <textarea id="officerRemarks" class="form-control" rows="4" placeholder="Write your comments here..."></textarea>
                 </div>
             </div>
-            <div id="modalFooterActions" class="modal-footer border-0 d-flex justify-content-end gap-3 pb-4 px-4">
-                </div>
+            <div class="modal-footer border-0 d-flex justify-content-end gap-3 pb-4 px-4">
+                <button id="startWorkBtn" class="btn-start" onclick="updateStatus('in progress')">
+                    <i class="bi bi-play-fill me-1"></i> START WORK
+                </button>
+                <button id="resolveBtn" class="btn-resolve" onclick="updateStatus('resolved')">
+                    <i class="bi bi-check2-circle me-1"></i> RESOLVE
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -148,7 +128,7 @@ const firebaseConfig = {
     messagingSenderId: "138166783170",
     appId: "1:138166783170:web:ae54b798e700d4a03e7f5b",
     measurementId: "G-K9KERE9NMT"
-  };
+  }; 
     let auth, db, activeKey = null;
     const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
 
@@ -162,18 +142,13 @@ const firebaseConfig = {
 
     function setupAuthListener() {
         auth.onAuthStateChanged((user) => {
-            if (user) { document.getElementById('adminEmail').innerText = "Logged in as: " + user.email; loadComplaints(); }
+            if (user) { loadComplaints(); }
             else { window.location.href = 'admin.html'; }
         });
     }
 
-    function _getPriorityValue(p) {
-        if (!p) return 4;
-        switch (p.toUpperCase()) { case 'HIGH': return 1; case 'MEDIUM': return 2; case 'LOW': return 3; default: return 4; }
-    }
-
     function formatTime(ts) {
-        if (!ts || ts === "") return "Not available";
+        if (!ts) return "Not available";
         return new Date(ts).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
     }
 
@@ -182,26 +157,24 @@ const firebaseConfig = {
         db.ref('complaints').on('value', (snapshot) => {
             tableBody.innerHTML = '';
             let counts = { pending: 0, progress: 0, resolved: 0, reopened: 0 };
-            let items = [];
-            snapshot.forEach((child) => { let d = child.val(); d.key = child.key; items.push(d); });
-
-            items.sort((a, b) => _getPriorityValue(a.priority) - _getPriorityValue(b.priority));
-
-            items.forEach((data) => {
+            
+            snapshot.forEach((child) => {
+                const data = child.val();
+                const key = child.key;
                 const status = (data.status || 'pending').toLowerCase();
                 const p = (data.priority || 'Medium').toUpperCase();
+                
                 let bClass = 'bg-pending';
-
                 if (status === 'in progress') { counts.progress++; bClass = 'bg-inprogress'; }
                 else if (status === 'resolved') { counts.resolved++; bClass = 'bg-resolved'; }
-                else if (status === 're-opened' || status === 'reopened') { counts.reopened++; bClass = 'bg-reopened'; }
+                else if (status === 'reopened' || status === 're-opened') { counts.reopened++; bClass = 'bg-reopened'; }
                 else { counts.pending++; bClass = 'bg-pending'; }
 
                 const pColor = p === 'HIGH' ? '#dc3545' : (p === 'LOW' ? '#2e7d32' : '#f57c00');
 
                 tableBody.innerHTML += `
-                    <tr onclick="viewDetail('${data.key}')" style="cursor: pointer;">
-                        <td class="ps-4 fw-bold text-primary">${data.complaintId || data.key}</td>
+                    <tr onclick="viewDetail('${key}')" style="cursor: pointer;">
+                        <td class="ps-4 fw-bold text-primary">${data.complaintId || key}</td>
                         <td><div class="fw-bold">${data.name || 'N/A'}</div></td>
                         <td>${data.mobile || 'N/A'}</td>
                         <td>${data.district || 'N/A'}</td>
@@ -209,6 +182,7 @@ const firebaseConfig = {
                         <td><span class="status-badge ${bClass}">${status}</span></td>
                     </tr>`;
             });
+
             document.getElementById('pendingCount').innerText = counts.pending;
             document.getElementById('progressCount').innerText = counts.progress;
             document.getElementById('resolvedCount').innerText = counts.resolved;
@@ -219,60 +193,47 @@ const firebaseConfig = {
     function viewDetail(key) {
         activeKey = key;
         db.ref('complaints/' + key).once('value').then((snap) => {
-            const d = snap.val(); if(!d) return;
+            const d = snap.val();
             const status = (d.status || 'pending').toLowerCase();
-            const isReopened = (status === 're-opened' || status === 'reopened');
-            const defaultRemark = "Officer has acknowledged and started work on this grievance.";
-
-            document.getElementById('modalTitle').innerText = "ID: " + (d.complaintId || key);
-            document.getElementById('reopenedBadgeContainer').innerHTML = isReopened ? '<span class="blink-reopened">RE-OPENED</span>' : '';
             
-            document.getElementById('officerRemarks').value = d.officer_remarks || (isReopened ? "" : defaultRemark);
+            document.getElementById('modalTitle').innerText = "Complaint ID: " + (d.complaintId || key);
+            
+            document.getElementById('officerRemarks').value = d.officer_remarks || "Officer has acknowledged and started work on this grievance.";
             document.getElementById('officerRemarks').disabled = (status === 'resolved');
 
-            let footerHtml = '';
-            if (status !== 'resolved') {
-                if (status === 'pending' || isReopened) {
-                    footerHtml += `<button class="btn-start" onclick="processUpdate('In Progress')">
-                        <i class="bi bi-play-fill me-1"></i> ${isReopened ? 'RESTART WORK' : 'START WORK'}</button>`;
-                }
-                footerHtml += `<button class="btn-resolve" onclick="processUpdate('Resolved')">
-                    <i class="bi bi-check2-circle me-1"></i> RESOLVE</button>`;
-            } else {
-                footerHtml = `<span class="text-success fw-bold small"><i class="bi bi-check-all"></i> COMPLAINT RESOLVED</span>`;
-            }
-            document.getElementById('modalFooterActions').innerHTML = footerHtml;
+            document.getElementById('startWorkBtn').style.display = (status === 'pending') ? 'block' : 'none';
+            document.getElementById('resolveBtn').style.display = (status !== 'resolved') ? 'block' : 'none';
 
             let html = `
                 <div class="detail-item"><i class="bi bi-calendar-event"></i><span><strong>Registered:</strong> ${formatTime(d.createdAt || d.timestamp)}</span></div>
-                <div class="detail-item"><i class="bi bi-exclamation-triangle"></i><span><strong>Priority Level:</strong> ${(d.priority || 'Medium').toUpperCase()}</span></div>
                 ${d.work_started_at ? `<div class="detail-item"><i class="bi bi-play-circle-fill"></i><span><strong>Work Started:</strong> ${formatTime(d.work_started_at)}</span></div>` : ''}
-                ${d.resolved_at && !isReopened ? `<div class="detail-item"><i class="bi bi-check-circle-fill"></i><span><strong>Work Resolved:</strong> ${formatTime(d.resolved_at)}</span></div>` : ''}
-                <div class="detail-item"><i class="bi bi-telephone-fill"></i><span><strong>Citizen Contact:</strong> ${d.mobile || 'N/A'}</span></div>
-                <div class="fw-bold small mt-3" style="color: #00796b; font-size: 11px;">PROBLEM DESCRIPTION:</div>
-                <div class="description-box">${d.description || "N/A"}</div>`;
-
-            if(isReopened) {
-                html += `<div class="p-2 mb-3 rounded" style="background-color: #fff5f5; border: 1px solid #fed7d7;">
-                    <div class="fw-bold text-danger small mb-1" style="font-size: 10px;">WHY CITIZEN RE-OPENED:</div>
-                    <div style="font-style: italic; font-size: 13px;">${d.officer_remarks || "No reason provided."}</div></div>`;
-            }
-            document.getElementById('modalContent').innerHTML = html;
+                ${d.resolved_at ? `<div class="detail-item"><i class="bi bi-check-circle-fill"></i><span><strong>Resolved:</strong> ${formatTime(d.resolved_at)}</span></div>` : ''}
+                <div class="detail-item"><i class="bi bi-telephone"></i><span><strong>Citizen Contact:</strong> ${d.mobile || 'N/A'}</span></div>
+                <div class="description-box"><strong>Description:</strong><br>${d.description || "N/A"}</div>
+            `;
+            document.getElementById('modalDataContent').innerHTML = html;
             detailsModal.show();
         });
     }
 
-    function processUpdate(newStatus) {
+    function updateStatus(newStatus) {
         const remarks = document.getElementById('officerRemarks').value.trim();
-        if (newStatus === 'Resolved' && remarks === "") { alert("Please provide remarks before resolving."); return; }
-        
-        let updates = { status: newStatus.toLowerCase(), officer_remarks: remarks };
-        if (newStatus === 'In Progress') updates['work_started_at'] = firebase.database.ServerValue.TIMESTAMP;
-        if (newStatus === 'Resolved') updates['resolved_at'] = firebase.database.ServerValue.TIMESTAMP;
+        if (newStatus === 'resolved' && remarks === "") {
+            alert("Please provide remarks before resolving.");
+            return;
+        }
+
+        let updates = {
+            status: newStatus,
+            officer_remarks: remarks
+        };
+
+        if (newStatus === 'in progress') updates['work_started_at'] = firebase.database.ServerValue.TIMESTAMP;
+        if (newStatus === 'resolved') updates['resolved_at'] = firebase.database.ServerValue.TIMESTAMP;
 
         db.ref('complaints/' + activeKey).update(updates).then(() => {
             detailsModal.hide();
-        }).catch(err => alert("Error updating status: " + err.message));
+        });
     }
 
     function logout() { auth.signOut().then(() => { window.location.href = 'index.html'; }); }
