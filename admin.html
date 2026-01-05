@@ -229,8 +229,9 @@ const firebaseConfig = {
                 firebase.initializeApp(firebaseConfig);
             }
             auth = firebase.auth();
+            console.log("Firebase initialized successfully.");
         } else {
-            console.error("Firebase Configuration is missing!");
+            console.error("Firebase Configuration is missing! Check if GitHub Actions deployed to gh-pages.");
         }
     }
 
@@ -249,8 +250,14 @@ const firebaseConfig = {
 
     async function handleLogin() {
         if (!auth) initFirebase();
+        
         if (!auth) {
-            Swal.fire('System Error', 'Firebase not loaded. Check connection.', 'error');
+            Swal.fire({
+                icon: 'error',
+                title: 'System Error',
+                text: 'Firebase configuration not found. Please ensure the gh-pages deployment is active.',
+                footer: '<a href="https://github.com/your-username/your-repo/actions">Check GitHub Actions Log</a>'
+            });
             return;
         }
 
@@ -290,6 +297,7 @@ const firebaseConfig = {
             loginBtn.disabled = false;
             let msg = "Invalid email or password";
             if (error.code === 'auth/user-not-found') msg = "User not registered";
+            if (error.code === 'auth/wrong-password') msg = "Incorrect password";
             Swal.fire('Login Failed', msg, 'error');
         }
     }
