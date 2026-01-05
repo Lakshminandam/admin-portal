@@ -19,19 +19,9 @@ jobs:
         env:
           FB_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
         run: |
-          python3 -c "
-          import os
-          config = os.environ.get('FB_CONFIG', '')
-          files = ['index.html', 'admin.html', 'dashboard.html']
-          for file_path in files:
-              if os.path.exists(file_path):
-                  with open(file_path, 'r') as f:
-                      content = f.read()
-                  new_content = content.replace('// GITHUB_ACTION_PLACEHOLDER', config)
-                  with open(file_path, 'w') as f:
-                      f.write(new_content)
-                  print(f'Successfully injected config into {file_path}')
-          "
+          sed -i "s#// GITHUB_ACTION_PLACEHOLDER#$FB_CONFIG#g" index.html
+          sed -i "s#// GITHUB_ACTION_PLACEHOLDER#$FB_CONFIG#g" admin.html
+          sed -i "s#// GITHUB_ACTION_PLACEHOLDER#$FB_CONFIG#g" dashboard.html
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
