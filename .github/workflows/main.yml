@@ -22,6 +22,8 @@ jobs:
           export SECRET_DATA="${FB_CONFIG}"
           perl -i -pe 's|// GITHUB_ACTION_PLACEHOLDER|$ENV{SECRET_DATA}|g' index.html
           perl -i -pe 's|// GITHUB_ACTION_PLACEHOLDER|$ENV{SECRET_DATA}|g' admin.html
+          perl -i -pe 's|// GITHUB_ACTION_PLACEHOLDER|$ENV{SECRET_DATA}|g' dashboard.html
+
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
