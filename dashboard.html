@@ -17,18 +17,12 @@
         .sidebar { background: var(--primary); min-height: 100vh; color: white; padding-top: 20px; position: fixed; width: inherit; }
         .nav-link { color: rgba(255,255,255,0.8); transition: 0.3s; margin: 5px 15px; border-radius: 8px; text-decoration: none; display: block; padding: 10px; }
         .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.1); color: white; }
-        .main-content { padding: 30px; margin-left: 16.666667%; }
+        .main-content { padding: 30px; margin-left: 16.666667%; } /* Adjusted for Bootstrap col-2 */
         .stat-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-bottom: 4px solid var(--primary); }
         .data-card { background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
         .table thead { background: #f8fafc; color: #64748b; font-size: 0.8rem; text-transform: uppercase; }
-        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: white; }
-        
-        /* Status Colors */
-        .bg-registered { background-color: #6c757d; }
-        .bg-progress { background-color: #0d6efd; }
-        .bg-resolved { background-color: #198754; }
-        .bg-reopened { background-color: #dc3545; }
-
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+        .bg-pending { background: #fff7ed; color: #ea580c; }
         @media (max-width: 768px) { .sidebar { position: relative; min-height: auto; } .main-content { margin-left: 0; } }
     </style>
 </head>
@@ -50,35 +44,11 @@
                 <div id="adminEmail" class="fw-bold text-primary"></div>
             </div>
 
-            <div class="row g-3 mb-4 text-center">
-                <div class="col-md-2">
-                    <div class="stat-card" style="border-bottom-color: #003366;">
-                        <div class="text-muted small fw-bold">Total</div>
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="text-muted small">Total Complaints</div>
                         <h2 class="fw-bold mb-0" id="totalCount">0</h2>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="stat-card" style="border-bottom-color: #6c757d;">
-                        <div class="text-muted small fw-bold">Registered</div>
-                        <h2 class="fw-bold mb-0 text-secondary" id="registeredCount">0</h2>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card" style="border-bottom-color: #0d6efd;">
-                        <div class="text-muted small fw-bold">In Progress</div>
-                        <h2 class="fw-bold mb-0 text-primary" id="progressCount">0</h2>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="stat-card" style="border-bottom-color: #198754;">
-                        <div class="text-muted small fw-bold">Resolved</div>
-                        <h2 class="fw-bold mb-0 text-success" id="resolvedCount">0</h2>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card" style="border-bottom-color: #dc3545;">
-                        <div class="text-muted small fw-bold">Reopened</div>
-                        <h2 class="fw-bold mb-0 text-danger" id="reopenedCount">0</h2>
                     </div>
                 </div>
             </div>
@@ -106,7 +76,6 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // GITHUB_ACTION_PLACEHOLDER
 
@@ -142,81 +111,50 @@
         
         db.ref('complaints').on('value', (snapshot) => {
             tableBody.innerHTML = '';
-            let counts = { total: 0, registered: 0, progress: 0, resolved: 0, reopened: 0 };
+            let count = 0;
             
             if (!snapshot.exists()) {
                 tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">No complaints found.</td></tr>';
-                updateCounters(counts);
+                document.getElementById('totalCount').innerText = "0";
                 return;
             }
 
             snapshot.forEach((childSnapshot) => {
                 const data = childSnapshot.val();
-                const key = childSnapshot.key;
-                counts.total++;
-
-                // Determine Status and Badge
-                const status = (data.status || 'Registered');
-                let badgeClass = 'bg-registered';
+                count++;
                 
-                if (status === 'In Progress') { counts.progress++; badgeClass = 'bg-progress'; }
-                else if (status === 'Resolved') { counts.resolved++; badgeClass = 'bg-resolved'; }
-                else if (status === 'Reopened') { counts.reopened++; badgeClass = 'bg-reopened'; }
-                else { counts.registered++; badgeClass = 'bg-registered'; }
-
                 const row = `
                     <tr>
-                        <td class="ps-4 fw-bold text-primary">${data.complaintId || key}</td>
+                        <td class="ps-4 fw-bold text-primary">${data.complaintId || childSnapshot.key}</td>
                         <td>
                             <div class="fw-bold">${data.name || 'N/A'}</div>
                             <div class="small text-muted">${data.age || '??'} yrs | ${data.gender || 'N/A'}</div>
                         </td>
                         <td>${data.mobile || 'N/A'}</td>
                         <td>${data.district || 'N/A'}</td>
-                        <td><span class="status-badge ${badgeClass}">${status}</span></td>
+                        <td><span class="status-badge bg-pending">Pending</span></td>
                         <td class="text-end pe-4">
-                            <div class="btn-group">
-                                <button class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">Action</button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="updateStatus('${key}', 'Registered')">Set Registered</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="updateStatus('${key}', 'In Progress')">Set In Progress</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="updateStatus('${key}', 'Resolved')">Set Resolved</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="updateStatus('${key}', 'Reopened')">Set Reopened</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item text-info" href="#" onclick="viewDetail('${key}')">View Details</a></li>
-                                </ul>
-                            </div>
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewDetail('${childSnapshot.key}')">View</button>
                         </td>
                     </tr>
                 `;
                 tableBody.innerHTML += row;
             });
-            updateCounters(counts);
+            document.getElementById('totalCount').innerText = count;
         }, (error) => {
-            tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Permission Denied. Check Rules.</td></tr>';
+            console.error("Database Error:", error);
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Permission Denied: Check Database Rules.</td></tr>';
         });
     }
 
-    function updateCounters(c) {
-        document.getElementById('totalCount').innerText = c.total;
-        document.getElementById('registeredCount').innerText = c.registered;
-        document.getElementById('progressCount').innerText = c.progress;
-        document.getElementById('resolvedCount').innerText = c.resolved;
-        document.getElementById('reopenedCount').innerText = c.reopened;
-    }
-
-    function updateStatus(id, newStatus) {
-        db.ref('complaints/' + id).update({ status: newStatus })
-            .then(() => console.log("Status updated!"))
-            .catch(err => alert("Error updating status: " + err.message));
-    }
-
     function viewDetail(id) {
-        alert("Viewing full details for ID: " + id);
+        alert("Viewing details for: " + id);
     }
 
     function logout() {
-        auth.signOut().then(() => { window.location.href = 'admin.html'; });
+        auth.signOut().then(() => {
+            window.location.href = 'admin.html';
+        });
     }
 
     initFirebase();
