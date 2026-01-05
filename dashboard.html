@@ -12,7 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <style>
-        :root { --primary: #003366; --accent: #FFD700; --bg: #f1f5f9; }
+        :root { --primary: #003366; --accent: #FFD700; --bg: #f1f5f9; --teal-dark: #00695c; }
         body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; }
         .sidebar { background: var(--primary); min-height: 100vh; color: white; padding-top: 20px; position: fixed; width: inherit; }
         .nav-link { color: rgba(255,255,255,0.8); transition: 0.3s; margin: 5px 15px; border-radius: 8px; text-decoration: none; display: block; padding: 10px; }
@@ -27,6 +27,14 @@
         .bg-progress { background-color: #0d6efd; }
         .bg-resolved { background-color: #198754; }
         .bg-reopened { background-color: #dc3545; }
+
+        /* Detail Modal Styles (Flutter Inspired) */
+        .modal-content { border-radius: 20px; border: none; }
+        .modal-header { background-color: var(--teal-dark); color: white; border-radius: 20px 20px 0 0; }
+        .detail-item { display: flex; align-items: center; margin-bottom: 10px; font-size: 0.9rem; }
+        .detail-item i { color: var(--teal-dark); margin-right: 10px; width: 20px; }
+        .description-box { background: #f8f9fa; padding: 15px; border-radius: 12px; border-left: 4px solid var(--teal-dark); margin-top: 10px; }
+        .priority-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; text-transform: uppercase; margin-left: 10px; }
 
         @media (max-width: 768px) { .sidebar { position: relative; min-height: auto; } .main-content { margin-left: 0; } }
     </style>
@@ -99,6 +107,24 @@
     </div>
 </div>
 
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold" id="modalTitle">Complaint Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="modalContent">
+                    </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const firebaseConfig = {
@@ -113,6 +139,7 @@ const firebaseConfig = {
   };
 
     let auth, db;
+    const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
 
     function initFirebase() {
         if (typeof firebaseConfig !== 'undefined') {
@@ -137,6 +164,12 @@ const firebaseConfig = {
                 window.location.href = 'admin.html';
             }
         });
+    }
+
+    function formatTimestamp(ts) {
+        if (!ts) return "N/A";
+        const date = new Date(ts);
+        return date.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
 
     function loadComplaints() {
@@ -211,16 +244,55 @@ const firebaseConfig = {
     }
 
     function viewDetail(id) {
-        alert("Viewing full details for ID: " + id);
+        db.ref('complaints/' + id).once('value').then((snapshot) => {
+            const data = snapshot.val();
+            if(!data) return;
+
+            const priority = data.priority || 'Medium';
+            const priorityColor = priority.toUpperCase() === 'HIGH' ? 'red' : (priority.toUpperCase() === 'LOW' ? 'green' : 'orange');
+
+            document.getElementById('modalTitle').innerText = "Complaint: " + (data.complaintId || id);
+            
+            let html = `
+                <div class="detail-item">
+                    <i class="bi bi-person-fill"></i>
+                    <span><strong>Citizen:</strong> ${data.name || 'N/A'} (${data.age || '??'} yrs)</span>
+                </div>
+                <div class="detail-item">
+                    <i class="bi bi-phone-fill"></i>
+                    <span><strong>Contact:</strong> ${data.mobile || 'N/A'}</span>
+                </div>
+                <div class="detail-item">
+                    <i class="bi bi-geo-alt-fill"></i>
+                    <span><strong>Address:</strong> ${data.address || 'N/A'}, ${data.district || ''}</span>
+                </div>
+                <div class="detail-item">
+                    <i class="bi bi-calendar-check"></i>
+                    <span><strong>Registered:</strong> ${formatTimestamp(data.timestamp)}</span>
+                </div>
+                <div class="detail-item">
+                    <i class="bi bi-bar-chart-fill"></i>
+                    <span><strong>Priority:</strong> <span class="priority-tag" style="background: ${priorityColor}15; color: ${priorityColor}; border: 1px solid ${priorityColor}">${priority}</span></span>
+                </div>
+                <hr>
+                <div class="fw-bold text-teal small mb-1" style="color: var(--teal-dark)">PROBLEM DESCRIPTION:</div>
+                <div class="description-box">
+                    ${data.description || data.description || "No specific details provided."}
+                </div>
+                
+                ${data.officer_remarks ? `
+                <div class="fw-bold text-teal small mt-3 mb-1" style="color: var(--teal-dark)">OFFICER REMARKS:</div>
+                <div class="p-3 rounded border bg-light small italic">"${data.officer_remarks}"</div>
+                ` : ''}
+            `;
+
+            document.getElementById('modalContent').innerHTML = html;
+            detailsModal.show();
+        });
     }
 
     function logout() {
-        auth.signOut().then(() => { 
-            window.location.href = 'index.html'; 
-        }).catch((error) => {
-            console.error("Logout Error:", error);
-            window.location.href = 'index.html';
-        });
+        auth.signOut().then(() => { window.location.href = 'index.html'; });
     }
 
     initFirebase();
