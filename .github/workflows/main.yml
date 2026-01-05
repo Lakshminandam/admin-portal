@@ -17,11 +17,29 @@ jobs:
 
       - name: Inject Firebase Config
         env:
+          # This pulls your secret from GitHub Settings
           FB_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
         run: |
-          sed -i "s#// GITHUB_ACTION_PLACEHOLDER#$FB_CONFIG#g" index.html
-          sed -i "s#// GITHUB_ACTION_PLACEHOLDER#$FB_CONFIG#g" admin.html
-          sed -i "s#// GITHUB_ACTION_PLACEHOLDER#$FB_CONFIG#g" dashboard.html
+          python3 -c "
+          import os
+          # Get the secret from the environment
+          config = os.environ.get('FB_CONFIG', '')
+          
+          # List of files to update
+          files = ['index.html', 'admin.html', 'dashboard.html']
+          
+          for file_path in files:
+              if os.path.exists(file_path):
+                  with open(file_path, 'r', encoding='utf-8') as f:
+                      content = f.read()
+                  
+                  # Replace the placeholder comment with the actual secret
+                  new_content = content.replace('// GITHUB_ACTION_PLACEHOLDER', config)
+                  
+                  with open(file_path, 'w', encoding='utf-8') as f:
+                      f.write(new_content)
+                  print(f'Successfully updated {file_path}')
+          "
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
