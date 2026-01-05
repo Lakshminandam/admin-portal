@@ -212,13 +212,20 @@
 <script>
 // GITHUB_ACTION_PLACEHOLDER
 
-    if (typeof firebaseConfig !== 'undefined') {
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+    let auth;
+
+    function initFirebase() {
+        if (typeof firebaseConfig !== 'undefined') {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            auth = firebase.auth();
+        } else {
+            console.error("Firebase Configuration is missing!");
         }
     }
-    
-    const auth = firebase.auth();
+
+    initFirebase();
 
     function refreshCaptcha() {
         const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -232,6 +239,12 @@
     window.onload = refreshCaptcha;
 
     async function handleLogin() {
+        if (!auth) initFirebase();
+        if (!auth) {
+            Swal.fire('System Error', 'Firebase not loaded. Check connection.', 'error');
+            return;
+        }
+
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const captchaInput = document.getElementById('captchaInput').value;
