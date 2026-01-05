@@ -32,15 +32,19 @@
         .modal-content { border-radius: 15px; border: none; }
         .modal-header { background-color: white; color: black; border-bottom: 1px solid #eee; }
         .detail-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.9rem; }
-        .detail-item i { color: #00695c; margin-right: 10px; }
-        .description-box { background: #fdfdfd; padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 15px; }
+        .detail-item i { color: #00695c; margin-right: 10px; font-size: 1.1rem; }
+        .description-box { background: #fdfdfd; padding: 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 15px; }
         .priority-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; margin-left: 10px; }
 
+        /* Blinking Badge Logic */
+        .blink-reopened { background-color: #dc3545; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; animation: blinker 0.8s linear infinite; margin-left: 8px; }
+        @keyframes blinker { 50% { opacity: 0; } }
+
         /* Button Styling to match Flutter exactly */
-        .btn-start { background-color: #f57c00; color: white; border-radius: 20px; padding: 8px 20px; border: none; font-weight: bold; }
-        .btn-resolve { background-color: #388e3c; color: white; border-radius: 20px; padding: 8px 20px; border: none; font-weight: bold; }
-        .btn-start:hover { background-color: #e65100; }
-        .btn-resolve:hover { background-color: #2e7d32; }
+        .btn-start { background-color: #ef6c00; color: white; border-radius: 20px; padding: 8px 25px; border: none; font-weight: bold; transition: 0.3s; }
+        .btn-resolve { background-color: #2e7d32; color: white; border-radius: 20px; padding: 8px 25px; border: none; font-weight: bold; transition: 0.3s; }
+        .btn-start:hover { background-color: #e65100; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .btn-resolve:hover { background-color: #1b5e20; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
 
         @media (max-width: 768px) { .sidebar { position: relative; min-height: auto; } .main-content { margin-left: 0; } }
     </style>
@@ -117,7 +121,10 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content shadow-lg">
             <div class="modal-header">
-                <h6 class="modal-title fw-bold" id="modalTitle">ID: CP43HTX</h6>
+                <div class="d-flex align-items-center">
+                    <h6 class="modal-title fw-bold mb-0" id="modalTitle">ID: Loading...</h6>
+                    <div id="reopenedBadgeContainer"></div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -125,16 +132,16 @@
                     </div>
 
                 <div class="mt-3">
-                    <label class="fw-bold text-teal small mb-1" style="color: #009688; font-size: 11px;">UPDATE REMARKS / ACTION TAKEN:</label>
-                    <textarea id="officerRemarks" class="form-control" rows="4" style="font-size: 13px;"></textarea>
+                    <label class="fw-bold small mb-1" style="color: #00796b; font-size: 11px; letter-spacing: 0.5px;">UPDATE REMARKS / ACTION TAKEN:</label>
+                    <textarea id="officerRemarks" class="form-control shadow-sm" rows="4" style="font-size: 14px; border: 1px solid #ccc;"></textarea>
                 </div>
             </div>
-            <div class="modal-footer border-0 d-flex justify-content-end gap-2 pb-4 px-4">
-                <button id="btnStartWork" class="btn-start" onclick="handleStatusUpdate('In Progress')">
-                    <i class="bi bi-play-fill"></i> START WORK
+            <div class="modal-footer border-0 d-flex justify-content-end gap-3 pb-4 px-4">
+                <button id="btnStartWork" class="btn-start" onclick="processUpdate('In Progress')">
+                    <i class="bi bi-play-fill me-1"></i> START WORK
                 </button>
-                <button id="btnResolve" class="btn-resolve" onclick="handleStatusUpdate('Resolved')">
-                    <i class="bi bi-check2-circle"></i> RESOLVE
+                <button id="btnResolve" class="btn-resolve" onclick="processUpdate('Resolved')">
+                    <i class="bi bi-check2-circle me-1"></i> RESOLVE
                 </button>
             </div>
         </div>
@@ -146,7 +153,7 @@
 // GITHUB_ACTION_PLACEHOLDER
 
     let auth, db;
-    let selectedComplaintKey = null;
+    let activeKey = null;
     const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
 
     function initFirebase() {
@@ -156,7 +163,7 @@
             db = firebase.database();
             setupAuthListener();
         } else {
-            document.getElementById('complaintsTable').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Configuration Error.</td></tr>';
+            document.getElementById('complaintsTable').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Config Missing.</td></tr>';
         }
     }
 
@@ -171,10 +178,22 @@
         });
     }
 
-    function formatTimestamp(ts) {
-        if (!ts) return "Not available";
-        const date = new Date(ts);
-        return date.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+    function _getPriorityValue(p) {
+        if (!p) return 4;
+        switch (p.toUpperCase()) {
+            case 'HIGH': return 1;
+            case 'MEDIUM': return 2;
+            case 'LOW': return 3;
+            default: return 4;
+        }
+    }
+
+    function formatTime(ts) {
+        if (!ts || ts === "") return "Not available";
+        try {
+            const date = new Date(ts);
+            return date.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+        } catch (e) { return "Invalid Date"; }
     }
 
     function loadComplaints() {
@@ -184,33 +203,40 @@
             let counts = { registered: 0, progress: 0, resolved: 0, reopened: 0 };
             
             if (!snapshot.exists()) {
-                tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">No complaints found.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">No data.</td></tr>';
                 updateCounters(counts);
                 return;
             }
 
-            snapshot.forEach((childSnapshot) => {
-                const data = childSnapshot.val();
-                const key = childSnapshot.key;
+            let items = [];
+            snapshot.forEach((child) => {
+                let data = child.val();
+                data.key = child.key;
+                items.push(data);
+            });
+
+            items.sort((a, b) => _getPriorityValue(a.priority) - _getPriorityValue(b.priority));
+
+            items.forEach((data) => {
                 const status = (data.status || 'Registered');
-                const priority = (data.priority || 'Medium').toUpperCase();
+                const p = (data.priority || 'Medium').toUpperCase();
                 
                 let badgeClass = 'bg-registered';
-                if (status === 'In Progress') { counts.progress++; badgeClass = 'bg-progress'; }
-                else if (status === 'Resolved') { counts.resolved++; badgeClass = 'bg-resolved'; }
-                else if (status === 'Reopened') { counts.reopened++; badgeClass = 'bg-reopened'; }
+                if (status.toLowerCase() === 'in progress') { counts.progress++; badgeClass = 'bg-progress'; }
+                else if (status.toLowerCase() === 'resolved') { counts.resolved++; badgeClass = 'bg-resolved'; }
+                else if (status.toLowerCase() === 're-opened' || status.toLowerCase() === 'reopened') { counts.reopened++; badgeClass = 'bg-reopened'; }
                 else { counts.registered++; badgeClass = 'bg-registered'; }
 
-                const priorityColor = priority === 'HIGH' ? '#dc3545' : (priority === 'LOW' ? '#198754' : '#ff9800');
+                const pColor = p === 'HIGH' ? '#dc3545' : (p === 'LOW' ? '#2e7d32' : '#f57c00');
 
                 const row = `
-                    <tr onclick="viewDetail('${key}')" style="cursor: pointer;">
-                        <td class="ps-4 fw-bold text-primary">${data.complaintId || key}</td>
+                    <tr onclick="viewDetail('${data.key}')" style="cursor: pointer;">
+                        <td class="ps-4 fw-bold text-primary">${data.complaintId || data.key}</td>
                         <td><div class="fw-bold">${data.name || 'N/A'}</div></td>
                         <td>${data.mobile || 'N/A'}</td>
                         <td>${data.district || 'N/A'}</td>
                         <td><span class="status-badge ${badgeClass}">${status}</span></td>
-                        <td><span class="priority-tag" style="background: ${priorityColor}15; color: ${priorityColor}; border: 1px solid ${priorityColor}">${priority}</span></td>
+                        <td><span class="priority-tag" style="background: ${pColor}15; color: ${pColor}; border: 1px solid ${pColor}">${p}</span></td>
                     </tr>
                 `;
                 tableBody.innerHTML += row;
@@ -227,34 +253,51 @@
     }
 
     function viewDetail(key) {
-        selectedComplaintKey = key;
-        db.ref('complaints/' + key).once('value').then((snapshot) => {
-            const data = snapshot.val();
-            if(!data) return;
+        activeKey = key;
+        db.ref('complaints/' + key).once('value').then((snap) => {
+            const d = snap.val();
+            if(!d) return;
 
-            document.getElementById('modalTitle').innerText = "ID: " + (data.complaintId || key);
+            const status = (d.status || 'pending').toLowerCase();
+            const isReopened = (status === 're-opened' || status === 'reopened');
+            const defaultRemark = "Officer has acknowledged and started work on this grievance.";
+
+            document.getElementById('modalTitle').innerText = "ID: " + (d.complaintId || key);
             
-            const defaultText = "Officer has acknowledged and started work on this grievance.";
-            document.getElementById('officerRemarks').value = data.officer_remarks || defaultText;
-            document.getElementById('officerRemarks').disabled = (data.status === 'Resolved');
+            document.getElementById('reopenedBadgeContainer').innerHTML = isReopened ? '<span class="blink-reopened">RE-OPENED</span>' : '';
 
-            document.getElementById('btnStartWork').style.display = (data.status === 'Resolved') ? 'none' : 'block';
-            document.getElementById('btnResolve').style.display = (data.status === 'Resolved') ? 'none' : 'block';
+            document.getElementById('officerRemarks').value = isReopened ? "" : (d.officer_remarks || defaultRemark);
+            document.getElementById('officerRemarks').disabled = (status === 'resolved');
+
+            const showBtns = (status !== 'resolved');
+            document.getElementById('btnStartWork').style.display = showBtns ? 'block' : 'none';
+            document.getElementById('btnResolve').style.display = showBtns ? 'block' : 'none';
+            document.getElementById('btnStartWork').innerText = isReopened ? "RESTART WORK" : "START WORK";
 
             let html = `
-                <div class="detail-item"><i class="bi bi-calendar-event"></i><span><strong>Registered:</strong> ${formatTimestamp(data.timestamp || data.createdAt)}</span></div>
-                <div class="detail-item"><i class="bi bi-exclamation-circle"></i><span><strong>Priority Level:</strong> ${data.priority || 'Medium'}</span></div>
-                <div class="detail-item"><i class="bi bi-telephone"></i><span><strong>Citizen Contact:</strong> ${data.mobile || 'N/A'}</span></div>
-                <div class="fw-bold text-teal small mt-3" style="color: #009688; font-size: 11px;">PROBLEM DESCRIPTION:</div>
-                <div class="description-box" style="font-size: 13px;">${data.description || "No details provided."}</div>
+                <div class="detail-item"><i class="bi bi-calendar-check"></i><span><strong>Registered:</strong> ${formatTime(d.createdAt || d.timestamp)}</span></div>
+                <div class="detail-item"><i class="bi bi-flag"></i><span><strong>Priority Level:</strong> ${(d.priority || 'Medium').toUpperCase()}</span></div>
+                ${d.work_started_at ? `<div class="detail-item"><i class="bi bi-play-circle"></i><span><strong>Work Started:</strong> ${formatTime(d.work_started_at)}</span></div>` : ''}
+                <div class="detail-item"><i class="bi bi-telephone"></i><span><strong>Citizen Contact:</strong> ${d.mobile || 'N/A'}</span></div>
+                
+                <div class="fw-bold small mt-3" style="color: #00796b; font-size: 11px;">PROBLEM DESCRIPTION:</div>
+                <div class="description-box" style="font-size: 14px; line-height: 1.5; color: #333;">${d.description || "N/A"}</div>
             `;
+
+            if(isReopened) {
+                html += `
+                <div class="p-2 mb-3 rounded" style="background-color: #fff5f5; border: 1px solid #fed7d7;">
+                    <div class="fw-bold text-danger small mb-1" style="font-size: 10px;"><i class="bi bi-exclamation-triangle"></i> WHY CITIZEN RE-OPENED:</div>
+                    <div style="font-style: italic; font-size: 13px;">${d.officer_remarks || "No reason provided."}</div>
+                </div>`;
+            }
 
             document.getElementById('modalContent').innerHTML = html;
             detailsModal.show();
         });
     }
 
-    function handleStatusUpdate(newStatus) {
+    function processUpdate(newStatus) {
         const remarks = document.getElementById('officerRemarks').value.trim();
         
         if (newStatus === 'Resolved' && remarks === "") {
@@ -262,17 +305,21 @@
             return;
         }
 
-        const updates = {
+        let updates = {
             status: newStatus,
-            officer_remarks: remarks,
-            updated_at: firebase.database.ServerValue.TIMESTAMP
+            officer_remarks: remarks
         };
 
-        db.ref('complaints/' + selectedComplaintKey).update(updates)
-            .then(() => {
-                detailsModal.hide();
-            })
-            .catch(err => alert("Error: " + err.message));
+        if (newStatus === 'In Progress') {
+            updates['work_started_at'] = firebase.database.ServerValue.TIMESTAMP;
+        }
+        if (newStatus === 'Resolved') {
+            updates['resolved_at'] = firebase.database.ServerValue.TIMESTAMP;
+        }
+
+        db.ref('complaints/' + activeKey).update(updates).then(() => {
+            detailsModal.hide();
+        }).catch(err => alert("Error: " + err.message));
     }
 
     function logout() {
