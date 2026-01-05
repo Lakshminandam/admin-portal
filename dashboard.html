@@ -51,13 +51,7 @@
             </div>
 
             <div class="row g-3 mb-4 text-center">
-                <div class="col-md-2">
-                    <div class="stat-card" style="border-bottom-color: #003366;">
-                        <div class="text-muted small fw-bold">Total</div>
-                        <h2 class="fw-bold mb-0" id="totalCount">0</h2>
-                    </div>
-                </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <div class="stat-card" style="border-bottom-color: #6c757d;">
                         <div class="text-muted small fw-bold">Registered</div>
                         <h2 class="fw-bold mb-0 text-secondary" id="registeredCount">0</h2>
@@ -69,7 +63,7 @@
                         <h2 class="fw-bold mb-0 text-primary" id="progressCount">0</h2>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <div class="stat-card" style="border-bottom-color: #198754;">
                         <div class="text-muted small fw-bold">Resolved</div>
                         <h2 class="fw-bold mb-0 text-success" id="resolvedCount">0</h2>
@@ -142,7 +136,8 @@
         
         db.ref('complaints').on('value', (snapshot) => {
             tableBody.innerHTML = '';
-            let counts = { total: 0, registered: 0, progress: 0, resolved: 0, reopened: 0 };
+            // Only tracking the 4 specific statuses
+            let counts = { registered: 0, progress: 0, resolved: 0, reopened: 0 };
             
             if (!snapshot.exists()) {
                 tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">No complaints found.</td></tr>';
@@ -153,9 +148,7 @@
             snapshot.forEach((childSnapshot) => {
                 const data = childSnapshot.val();
                 const key = childSnapshot.key;
-                counts.total++;
 
-                // Determine Status and Badge
                 const status = (data.status || 'Registered');
                 let badgeClass = 'bg-registered';
                 
@@ -198,7 +191,6 @@
     }
 
     function updateCounters(c) {
-        document.getElementById('totalCount').innerText = c.total;
         document.getElementById('registeredCount').innerText = c.registered;
         document.getElementById('progressCount').innerText = c.progress;
         document.getElementById('resolvedCount').innerText = c.resolved;
