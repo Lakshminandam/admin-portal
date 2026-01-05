@@ -21,7 +21,7 @@
         .stat-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-bottom: 4px solid var(--primary); }
         .data-card { background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
         .table thead { background: #f8fafc; color: #64748b; font-size: 0.8rem; text-transform: uppercase; }
-        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: white; }
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: white; cursor: pointer; }
         
         .bg-registered { background-color: #6c757d; }
         .bg-progress { background-color: #0d6efd; }
@@ -31,10 +31,10 @@
         /* Detail Modal Styles (Flutter Inspired) */
         .modal-content { border-radius: 20px; border: none; }
         .modal-header { background-color: var(--teal-dark); color: white; border-radius: 20px 20px 0 0; }
-        .detail-item { display: flex; align-items: center; margin-bottom: 10px; font-size: 0.9rem; }
-        .detail-item i { color: var(--teal-dark); margin-right: 10px; width: 20px; }
-        .description-box { background: #f8f9fa; padding: 15px; border-radius: 12px; border-left: 4px solid var(--teal-dark); margin-top: 10px; }
-        .priority-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; text-transform: uppercase; margin-left: 10px; }
+        .detail-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.85rem; }
+        .detail-item i { color: var(--teal-dark); margin-right: 10px; width: 18px; }
+        .description-box { background: #f8f9fa; padding: 12px; border-radius: 10px; border-left: 4px solid var(--teal-dark); margin-top: 5px; font-size: 0.9rem; }
+        .priority-tag { font-size: 0.7rem; padding: 3px 10px; border-radius: 6px; font-weight: bold; text-transform: uppercase; }
 
         @media (max-width: 768px) { .sidebar { position: relative; min-height: auto; } .main-content { margin-left: 0; } }
     </style>
@@ -94,7 +94,7 @@
                                 <th>Mobile</th>
                                 <th>District</th>
                                 <th>Status</th>
-                                <th class="text-end pe-4">Action</th>
+                                <th>Priority</th>
                             </tr>
                         </thead>
                         <tbody id="complaintsTable">
@@ -117,9 +117,13 @@
             <div class="modal-body p-4">
                 <div id="modalContent">
                     </div>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                <hr class="my-3">
+                <div class="mb-3">
+                    <label class="fw-bold text-teal small mb-2" style="color: var(--teal-dark)">UPDATE REMARKS / ACTION TAKEN:</label>
+                    <textarea id="officerRemarks" class="form-control" rows="3" placeholder="Enter remarks here..."></textarea>
+                </div>
+                <div id="modalActions" class="d-flex justify-content-end gap-2">
+                    </div>
             </div>
         </div>
     </div>
@@ -139,19 +143,17 @@ const firebaseConfig = {
   };
 
     let auth, db;
+    let currentComplaintId = null;
     const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
 
     function initFirebase() {
         if (typeof firebaseConfig !== 'undefined') {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
-            }
+            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
             auth = firebase.auth();
             db = firebase.database();
             setupAuthListener();
         } else {
-            console.error("Firebase config not found.");
-            document.getElementById('complaintsTable').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Configuration Error: Keys not found.</td></tr>';
+            document.getElementById('complaintsTable').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Configuration Error.</td></tr>';
         }
     }
 
@@ -168,13 +170,11 @@ const firebaseConfig = {
 
     function formatTimestamp(ts) {
         if (!ts) return "N/A";
-        const date = new Date(ts);
-        return date.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        return new Date(ts).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
     }
 
     function loadComplaints() {
         const tableBody = document.getElementById('complaintsTable');
-        
         db.ref('complaints').on('value', (snapshot) => {
             tableBody.innerHTML = '';
             let counts = { registered: 0, progress: 0, resolved: 0, reopened: 0 };
@@ -188,45 +188,30 @@ const firebaseConfig = {
             snapshot.forEach((childSnapshot) => {
                 const data = childSnapshot.val();
                 const key = childSnapshot.key;
-
                 const status = (data.status || 'Registered');
-                let badgeClass = 'bg-registered';
+                const priority = data.priority || 'Medium';
                 
+                let badgeClass = 'bg-registered';
                 if (status === 'In Progress') { counts.progress++; badgeClass = 'bg-progress'; }
                 else if (status === 'Resolved') { counts.resolved++; badgeClass = 'bg-resolved'; }
                 else if (status === 'Reopened') { counts.reopened++; badgeClass = 'bg-reopened'; }
                 else { counts.registered++; badgeClass = 'bg-registered'; }
 
+                const priorityColor = priority.toUpperCase() === 'HIGH' ? '#dc3545' : (priority.toUpperCase() === 'LOW' ? '#198754' : '#fd7e14');
+
                 const row = `
-                    <tr>
+                    <tr onclick="viewDetail('${key}')" style="cursor: pointer;">
                         <td class="ps-4 fw-bold text-primary">${data.complaintId || key}</td>
-                        <td>
-                            <div class="fw-bold">${data.name || 'N/A'}</div>
-                            <div class="small text-muted">${data.age || '??'} yrs | ${data.gender || 'N/A'}</div>
-                        </td>
+                        <td><div class="fw-bold">${data.name || 'N/A'}</div></td>
                         <td>${data.mobile || 'N/A'}</td>
                         <td>${data.district || 'N/A'}</td>
                         <td><span class="status-badge ${badgeClass}">${status}</span></td>
-                        <td class="text-end pe-4">
-                            <div class="btn-group">
-                                <button class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">Action</button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="updateStatus('${key}', 'Registered')">Set Registered</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="updateStatus('${key}', 'In Progress')">Set In Progress</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="updateStatus('${key}', 'Resolved')">Set Resolved</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="updateStatus('${key}', 'Reopened')">Set Reopened</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item text-info" href="#" onclick="viewDetail('${key}')">View Details</a></li>
-                                </ul>
-                            </div>
-                        </td>
+                        <td><span class="priority-tag" style="background: ${priorityColor}15; color: ${priorityColor}; border: 1px solid ${priorityColor}">${priority}</span></td>
                     </tr>
                 `;
                 tableBody.innerHTML += row;
             });
             updateCounters(counts);
-        }, (error) => {
-            tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Permission Denied. Check Rules.</td></tr>';
         });
     }
 
@@ -237,58 +222,60 @@ const firebaseConfig = {
         document.getElementById('reopenedCount').innerText = c.reopened;
     }
 
-    function updateStatus(id, newStatus) {
-        db.ref('complaints/' + id).update({ status: newStatus })
-            .then(() => console.log("Status updated!"))
-            .catch(err => alert("Error updating status: " + err.message));
-    }
-
     function viewDetail(id) {
+        currentComplaintId = id;
         db.ref('complaints/' + id).once('value').then((snapshot) => {
             const data = snapshot.val();
             if(!data) return;
 
-            const priority = data.priority || 'Medium';
-            const priorityColor = priority.toUpperCase() === 'HIGH' ? 'red' : (priority.toUpperCase() === 'LOW' ? 'green' : 'orange');
-
-            document.getElementById('modalTitle').innerText = "Complaint: " + (data.complaintId || id);
+            document.getElementById('modalTitle').innerText = "ID: " + (data.complaintId || id);
+            document.getElementById('officerRemarks').value = data.officer_remarks || "";
             
             let html = `
-                <div class="detail-item">
-                    <i class="bi bi-person-fill"></i>
-                    <span><strong>Citizen:</strong> ${data.name || 'N/A'} (${data.age || '??'} yrs)</span>
-                </div>
-                <div class="detail-item">
-                    <i class="bi bi-phone-fill"></i>
-                    <span><strong>Contact:</strong> ${data.mobile || 'N/A'}</span>
-                </div>
-                <div class="detail-item">
-                    <i class="bi bi-geo-alt-fill"></i>
-                    <span><strong>Address:</strong> ${data.address || 'N/A'}, ${data.district || ''}</span>
-                </div>
-                <div class="detail-item">
-                    <i class="bi bi-calendar-check"></i>
-                    <span><strong>Registered:</strong> ${formatTimestamp(data.timestamp)}</span>
-                </div>
-                <div class="detail-item">
-                    <i class="bi bi-bar-chart-fill"></i>
-                    <span><strong>Priority:</strong> <span class="priority-tag" style="background: ${priorityColor}15; color: ${priorityColor}; border: 1px solid ${priorityColor}">${priority}</span></span>
-                </div>
-                <hr>
-                <div class="fw-bold text-teal small mb-1" style="color: var(--teal-dark)">PROBLEM DESCRIPTION:</div>
-                <div class="description-box">
-                    ${data.description || data.description || "No specific details provided."}
-                </div>
-                
-                ${data.officer_remarks ? `
-                <div class="fw-bold text-teal small mt-3 mb-1" style="color: var(--teal-dark)">OFFICER REMARKS:</div>
-                <div class="p-3 rounded border bg-light small italic">"${data.officer_remarks}"</div>
-                ` : ''}
+                <div class="detail-item"><i class="bi bi-person-fill"></i><span><strong>Citizen:</strong> ${data.name || 'N/A'}</span></div>
+                <div class="detail-item"><i class="bi bi-phone-fill"></i><span><strong>Contact:</strong> ${data.mobile || 'N/A'}</span></div>
+                <div class="detail-item"><i class="bi bi-calendar-check"></i><span><strong>Registered:</strong> ${formatTimestamp(data.timestamp || data.createdAt)}</span></div>
+                <div class="fw-bold text-teal small mt-3" style="color: var(--teal-dark)">PROBLEM DESCRIPTION:</div>
+                <div class="description-box">${data.description || "No details provided."}</div>
             `;
 
+            let actionHtml = '';
+            const status = (data.status || 'Registered').toLowerCase();
+            
+            if (status !== 'resolved') {
+                actionHtml += `<button class="btn btn-warning btn-sm fw-bold" onclick="processUpdate('In Progress')"><i class="bi bi-play-fill"></i> START WORK</button>`;
+                actionHtml += `<button class="btn btn-success btn-sm fw-bold" onclick="processUpdate('Resolved')"><i class="bi bi-check-circle"></i> RESOLVE</button>`;
+            } else {
+                actionHtml = `<span class="text-success fw-bold small"><i class="bi bi-check-all"></i> COMPLAINT RESOLVED</span>`;
+                document.getElementById('officerRemarks').disabled = true;
+            }
+
             document.getElementById('modalContent').innerHTML = html;
+            document.getElementById('modalActions').innerHTML = actionHtml;
             detailsModal.show();
         });
+    }
+
+    function processUpdate(newStatus) {
+        const remarks = document.getElementById('officerRemarks').value.trim();
+        
+        if (newStatus === 'Resolved' && remarks === "") {
+            alert("Please provide remarks before resolving.");
+            return;
+        }
+
+        const updates = {
+            status: newStatus,
+            officer_remarks: remarks,
+            updated_at: firebase.database.ServerValue.TIMESTAMP
+        };
+
+        db.ref('complaints/' + currentComplaintId).update(updates)
+            .then(() => {
+                detailsModal.hide();
+                console.log("Updated to " + newStatus);
+            })
+            .catch(err => alert("Update failed: " + err.message));
     }
 
     function logout() {
