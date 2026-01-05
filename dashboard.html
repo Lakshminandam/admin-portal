@@ -12,18 +12,19 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     
     <style>
-        :root { --primary: #001f3f; --bg: #f4f7f9; --teal: #008080; }
+        :root { --primary: #001f3f; --bg: #f4f7f9; }
         body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; }
         
         .sidebar { background: #001529; min-height: 100vh; color: white; position: fixed; width: 240px; z-index: 1000; }
         .main-content { margin-left: 240px; padding: 40px; }
-        .nav-link { color: #a6adb4; padding: 15px 25px; display: block; text-decoration: none; transition: 0.3s; }
-        .nav-link:hover, .nav-link.active { background: #1890ff; color: white; }
+        .nav-link { color: #a6adb4; padding: 15px 25px; display: block; text-decoration: none; }
+        .nav-link.active { background: #1890ff; color: white; }
 
         .stat-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-bottom: 4px solid #ddd; text-align: center; }
         .data-card { background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 
-        .status-banner { width: 100%; padding: 8px; border-radius: 20px; text-align: center; font-weight: bold; font-size: 11px; margin-bottom: 15px; text-transform: uppercase; }
+        /* Flutter Style Header in Modal */
+        .status-banner { width: 100%; padding: 6px; border-radius: 20px; text-align: center; font-weight: bold; font-size: 11px; margin-bottom: 15px; text-transform: uppercase; }
         .banner-pending { background: #fff1f0; color: #cf1322; border: 1px solid #ffa39e; }
         .banner-inprogress { background: #fff7e6; color: #d46b08; border: 1px solid #ffd591; }
         .banner-resolved { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
@@ -35,10 +36,11 @@
         .detail-row i { margin-right: 12px; font-size: 16px; color: #008080; }
         .section-label { font-weight: bold; color: #008080; font-size: 11px; text-transform: uppercase; margin-top: 15px; display: block; }
         
-        .remarks-area { border: 1.5px solid #d9d9d9; border-radius: 8px; padding: 12px; font-size: 14px; width: 100%; background: #f9f9f9; }
+        .remarks-area { border: 1.5px solid #d9d9d9; border-radius: 8px; padding: 12px; font-size: 14px; width: 100%; background: #fff; }
 
-        .btn-flutter-start { background-color: #ff8c00; color: white; border: none; border-radius: 25px; padding: 10px 24px; font-weight: bold; font-size: 13px; display: flex; align-items: center; }
-        .btn-flutter-resolve { background-color: #388e3c; color: white; border: none; border-radius: 25px; padding: 10px 24px; font-weight: bold; font-size: 13px; display: flex; align-items: center; }
+        /* EXACT BUTTON STYLES FROM YOUR SCREENSHOT */
+        .btn-flutter-start { background-color: #ff8c00; color: white; border: none; border-radius: 25px; padding: 10px 24px; font-weight: bold; font-size: 13px; display: flex; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .btn-flutter-resolve { background-color: #388e3c; color: white; border: none; border-radius: 25px; padding: 10px 24px; font-weight: bold; font-size: 13px; display: flex; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         
         @media (max-width: 768px) { .sidebar { width: 70px; } .sidebar span { display: none; } .main-content { margin-left: 70px; } }
     </style>
@@ -56,10 +58,7 @@
 </div>
 
 <div class="main-content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold">Grievance Dashboard</h2>
-        <div id="adminUser" class="text-muted small"></div>
-    </div>
+    <h2 class="fw-bold mb-4">Grievance Dashboard</h2>
 
     <div class="row g-3 mb-5">
         <div class="col-md-3"><div class="stat-card" style="border-color: #cf1322;"><small class="text-danger fw-bold">PENDING</small><h2 id="pendingCount">0</h2></div></div>
@@ -101,7 +100,6 @@
             
             <div class="modal-body px-4">
                 <div id="m-banner" class="status-banner"></div>
-
                 <div class="detail-row"><i class="bi bi-calendar-event"></i> <span><strong>Registered:</strong> <span id="m-reg"></span></span></div>
                 <div class="detail-row" id="m-assign-row"><i class="bi bi-tools"></i> <span><strong>Assigned At:</strong> <span id="m-assign"></span></span></div>
                 <div class="detail-row" id="m-resolve-row" style="display:none;"><i class="bi bi-check-circle-fill text-success"></i> <span><strong>Resolved At:</strong> <span id="m-resolve"></span></span></div>
@@ -125,7 +123,6 @@
         </div>
     </div>
 </div>
-
 <script>
 const firebaseConfig = {
     apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
@@ -139,22 +136,19 @@ const firebaseConfig = {
   };
     let auth, db, activeKey = null;
     const detailModal = new bootstrap.Modal(document.getElementById('detailsModal'));
+
     window.onload = function() {
         if (typeof firebaseConfig !== 'undefined') {
-            firebase.initializeApp(firebaseConfig);
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
             auth = firebase.auth();
             db = firebase.database();
             
             auth.onAuthStateChanged(user => {
-                if (user) {
-                    document.getElementById('adminUser').innerText = user.email;
-                    loadComplaints();
-                } else {
-                    window.location.href = 'admin.html';
-                }
+                if (user) { loadComplaints(); } 
+                else { window.location.href = 'admin.html'; }
             });
-        } else {
-            alert("Firebase Configuration Missing! Please check config.js");
         }
     };
 
@@ -200,6 +194,9 @@ const firebaseConfig = {
             document.getElementById('progressCount').innerText = stats.progress;
             document.getElementById('resolvedCount').innerText = stats.resolved;
             document.getElementById('reopenedCount').innerText = stats.reopened;
+        }, error => {
+            console.error("Firebase Read Error:", error);
+            table.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error loading data: ${error.message}</td></tr>`;
         });
     }
 
@@ -220,10 +217,11 @@ const firebaseConfig = {
 
             document.getElementById('m-reg').innerText = formatTime(d.createdAt || d.timestamp);
             document.getElementById('m-assign').innerText = formatTime(d.work_started_at);
-            document.getElementById('m-resolve').innerText = formatDT(d.resolved_at);
             document.getElementById('m-resolve-row').style.display = d.resolved_at ? 'flex' : 'none';
+            if(d.resolved_at) document.getElementById('m-resolve').innerText = formatTime(d.resolved_at);
+            
             document.getElementById('m-contact').innerText = d.mobile || '---';
-            document.getElementById('m-desc').innerText = d.description || 'No details provided.';
+            document.getElementById('m-desc').innerText = d.description || 'No description provided.';
             
             const remarks = document.getElementById('officerRemarks');
             remarks.value = d.officer_remarks || "Officer has acknowledged and started work on this grievance.";
