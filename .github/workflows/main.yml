@@ -20,12 +20,15 @@ jobs:
           FB_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
         run: |
           export SECRET_DATA="${FB_CONFIG}"
+          
           perl -i -pe 's|// GITHUB_ACTION_PLACEHOLDER|$ENV{SECRET_DATA}|g' index.html
           perl -i -pe 's|// GITHUB_ACTION_PLACEHOLDER|$ENV{SECRET_DATA}|g' admin.html
           perl -i -pe 's|// GITHUB_ACTION_PLACEHOLDER|$ENV{SECRET_DATA}|g' dashboard.html
+          
+          echo "Injection complete for index, admin, and dashboard."
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: .
-          branch: gh-pages    
+          branch: gh-pages
