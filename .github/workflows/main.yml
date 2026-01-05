@@ -19,10 +19,18 @@ jobs:
         env:
           FB_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
         run: |
-          export SECRET_DATA="${FB_CONFIG}"
-          perl -i -pe 's|// GITHUB_ACTION_PLACEHOLDER|$ENV{SECRET_DATA}|g' index.html
-          perl -i -pe 's|// GITHUB_ACTION_PLACEHOLDER|$ENV{SECRET_DATA}|g' admin.html
-          perl -i -pe 's|// GITHUB_ACTION_PLACEHOLDER|$ENV{SECRET_DATA}|g' dashboard.html
+          python3 -c "
+          import os
+          config = os.environ['FB_CONFIG']
+          files = ['index.html', 'admin.html', 'dashboard.html']
+          for file_path in files:
+              with open(file_path, 'r') as f:
+                  content = f.read()
+              # This replaces the placeholder with the actual secret
+              new_content = content.replace('// GITHUB_ACTION_PLACEHOLDER', config)
+              with open(file_path, 'w') as f:
+                  f.write(new_content)
+          "
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
