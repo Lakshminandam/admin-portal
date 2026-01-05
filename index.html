@@ -116,6 +116,7 @@
     </div>
 </div>
 
+<script src="config.js"></script>
 <script>
 const firebaseConfig = {
     apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
@@ -153,17 +154,24 @@ const firebaseConfig = {
     function showPage(pageId) {
         document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
         document.getElementById(pageId).classList.add('active-page');
+        
+        if(pageId === 'complaint') {
+            checkAndFillMobile();
+        }
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    function checkAndFillMobile() {
         const urlParams = new URLSearchParams(window.location.search);
         let mobileFromUrl = urlParams.get('phone');
         if (mobileFromUrl) {
             mobileFromUrl = mobileFromUrl.replace(/\D/g, '').slice(-10);
             const mobileInput = document.getElementById('field_mobile');
             mobileInput.value = mobileFromUrl;
-            mobileInput.readOnly = true;
         }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        checkAndFillMobile();
     });
 
     function startVoiceAI() {
@@ -177,7 +185,7 @@ const firebaseConfig = {
             const q = questions[currentStep];
             const inputField = document.getElementById(q.id);
 
-            if (q.id === "field_mobile") {
+            if (q.id === "field_mobile" && inputField.value.length >= 10) {
                 currentStep++;
                 askNextQuestion();
                 return;
@@ -297,5 +305,6 @@ const firebaseConfig = {
         window.speechSynthesis.speak(msg);
     }
 </script>
+
 </body>
-</html>      
+</html>
