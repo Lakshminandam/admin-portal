@@ -14,7 +14,7 @@
     <style>
         :root { --primary: #003366; --accent: #FFD700; --bg: #f1f5f9; --teal-dark: #00695c; }
         body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; }
-        .sidebar { background: var(--primary); min-height: 100vh; color: white; padding-top: 20px; position: fixed; width: inherit; }
+        .sidebar { background: var(--primary); min-height: 100vh; color: white; padding-top: 20px; position: fixed; width: inherit; z-index: 100; }
         .nav-link { color: rgba(255,255,255,0.8); transition: 0.3s; margin: 5px 15px; border-radius: 8px; text-decoration: none; display: block; padding: 10px; }
         .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.1); color: white; }
         .main-content { padding: 30px; margin-left: 16.666667%; }
@@ -29,6 +29,10 @@
         .bg-resolved { background-color: #2e7d32; }
         .bg-reopened { background-color: #000000; }
 
+        /* Blinking Badge for Reopened */
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        .blink-badge { background: #ff4444; color: white; font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: bold; animation: blink 0.8s infinite; margin-left: 8px; }
+
         /* Detail Modal Styles */
         .modal-content { border-radius: 15px; border: none; }
         .detail-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.85rem; }
@@ -36,11 +40,16 @@
         .description-box { background: #fdfdfd; padding: 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; }
         .priority-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
 
-        /* Flutter Style Buttons */
+        /* Search Box Styles */
+        .search-container { position: relative; max-width: 400px; }
+        .search-container i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; }
+        .search-container input { padding-left: 35px; border-radius: 10px; border: 1px solid #e2e8f0; }
+
+        /* Buttons */
         .btn-start { background-color: #ef6c00; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
         .btn-resolve { background-color: #2e7d32; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
         
-        @media (max-width: 768px) { .sidebar { position: relative; min-height: auto; } .main-content { margin-left: 0; } }
+        @media (max-width: 768px) { .sidebar { position: relative; min-height: auto; width: 100%; } .main-content { margin-left: 0; } }
     </style>
 </head>
 <body>
@@ -58,7 +67,10 @@
         <div class="col-md-10 main-content">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3 class="fw-bold">Grievance Dashboard</h3>
-                <div id="adminEmail" class="fw-bold text-primary"></div>
+                <div class="search-container">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="adminSearch" class="form-control" placeholder="Search ID or Mobile..." onkeyup="filterComplaints()">
+                </div>
             </div>
 
             <div class="row g-3 mb-4 text-center">
@@ -78,7 +90,8 @@
                                 <th>Mobile</th>
                                 <th>District</th>
                                 <th>Priority</th>
-                                <th>Status</th> </tr>
+                                <th>Status</th> 
+                            </tr>
                         </thead>
                         <tbody id="complaintsTable">
                             <tr><td colspan="6" class="text-center py-4 text-muted">Loading grievances...</td></tr>
@@ -98,16 +111,15 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div id="modalDataContent">
-                    </div>
+                <div id="modalDataContent"></div>
                 <div class="mt-3">
-                    <label class="fw-bold small mb-1" style="color: #00796b;">OFFICER REMARKS:</label>
-                    <textarea id="officerRemarks" class="form-control" rows="4" placeholder="Write your comments here..."></textarea>
+                    <label class="fw-bold small mb-1" style="color: #00796b;">OFFICER REMARKS / ACTION TAKEN:</label>
+                    <textarea id="officerRemarks" class="form-control" rows="4" placeholder="Enter update here..."></textarea>
                 </div>
             </div>
             <div class="modal-footer border-0 d-flex justify-content-end gap-3 pb-4 px-4">
                 <button id="startWorkBtn" class="btn-start" onclick="updateStatus('in progress')">
-                    <i class="bi bi-play-fill me-1"></i> START WORK
+                    <i class="bi bi-play-fill me-1"></i> <span id="startWorkLabel">START WORK</span>
                 </button>
                 <button id="resolveBtn" class="btn-resolve" onclick="updateStatus('resolved')">
                     <i class="bi bi-check2-circle me-1"></i> RESOLVE
@@ -130,6 +142,7 @@ const firebaseConfig = {
     measurementId: "G-K9KERE9NMT"
   };
     let auth, db, activeKey = null;
+    let allComplaints = []; 
     const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
 
     function initFirebase() {
@@ -147,47 +160,93 @@ const firebaseConfig = {
         });
     }
 
+    function getPriorityValue(priority) {
+        switch ((priority || '').toUpperCase()) {
+            case 'HIGH': return 1;
+            case 'MEDIUM': return 2;
+            case 'LOW': return 3;
+            default: return 4;
+        }
+    }
+
     function formatTime(ts) {
         if (!ts) return "Not available";
         return new Date(ts).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
     }
 
     function loadComplaints() {
-        const tableBody = document.getElementById('complaintsTable');
         db.ref('complaints').on('value', (snapshot) => {
-            tableBody.innerHTML = '';
+            allComplaints = [];
             let counts = { pending: 0, progress: 0, resolved: 0, reopened: 0 };
             
             snapshot.forEach((child) => {
                 const data = child.val();
-                const key = child.key;
+                data.key = child.key;
                 const status = (data.status || 'pending').toLowerCase();
-                const p = (data.priority || 'Medium').toUpperCase();
                 
-                let bClass = 'bg-pending';
-                if (status === 'in progress') { counts.progress++; bClass = 'bg-inprogress'; }
-                else if (status === 'resolved') { counts.resolved++; bClass = 'bg-resolved'; }
-                else if (status === 'reopened' || status === 're-opened') { counts.reopened++; bClass = 'bg-reopened'; }
-                else { counts.pending++; bClass = 'bg-pending'; }
+                if (status === 'in progress') counts.progress++;
+                else if (status === 'resolved') counts.resolved++;
+                else if (status === 'reopened' || status === 're-opened') counts.reopened++;
+                else counts.pending++;
 
-                const pColor = p === 'HIGH' ? '#dc3545' : (p === 'LOW' ? '#2e7d32' : '#f57c00');
-
-                tableBody.innerHTML += `
-                    <tr onclick="viewDetail('${key}')" style="cursor: pointer;">
-                        <td class="ps-4 fw-bold text-primary">${data.complaintId || key}</td>
-                        <td><div class="fw-bold">${data.name || 'N/A'}</div></td>
-                        <td>${data.mobile || 'N/A'}</td>
-                        <td>${data.district || 'N/A'}</td>
-                        <td><span class="priority-tag" style="background: ${pColor}15; color: ${pColor}; border: 1px solid ${pColor}">${p}</span></td>
-                        <td><span class="status-badge ${bClass}">${status}</span></td>
-                    </tr>`;
+                allComplaints.push(data);
             });
+
+            allComplaints.sort((a, b) => getPriorityValue(a.priority) - getPriorityValue(b.priority));
 
             document.getElementById('pendingCount').innerText = counts.pending;
             document.getElementById('progressCount').innerText = counts.progress;
             document.getElementById('resolvedCount').innerText = counts.resolved;
             document.getElementById('reopenedCount').innerText = counts.reopened;
+
+            renderTable(allComplaints);
         });
+    }
+
+    function renderTable(dataList) {
+        const tableBody = document.getElementById('complaintsTable');
+        tableBody.innerHTML = '';
+
+        if (dataList.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No grievances found.</td></tr>';
+            return;
+        }
+
+        dataList.forEach((data) => {
+            const status = (data.status || 'pending').toLowerCase();
+            const p = (data.priority || 'Medium').toUpperCase();
+            const isReopened = status === 'reopened' || status === 're-opened';
+            
+            let bClass = 'bg-pending';
+            if (status === 'in progress') bClass = 'bg-inprogress';
+            else if (status === 'resolved') bClass = 'bg-resolved';
+            else if (isReopened) bClass = 'bg-reopened';
+
+            const pColor = p === 'HIGH' ? '#dc3545' : (p === 'LOW' ? '#2e7d32' : '#f57c00');
+
+            tableBody.innerHTML += `
+                <tr onclick="viewDetail('${data.key}')" style="cursor: pointer;">
+                    <td class="ps-4 fw-bold text-primary">
+                        ${data.complaintId || data.key}
+                        ${isReopened ? '<span class="blink-badge">RE-OPENED</span>' : ''}
+                    </td>
+                    <td><div class="fw-bold">${data.name || 'N/A'}</div></td>
+                    <td>${data.mobile || 'N/A'}</td>
+                    <td>${data.district || 'N/A'}</td>
+                    <td><span class="priority-tag" style="background: ${pColor}15; color: ${pColor}; border: 1px solid ${pColor}">${p}</span></td>
+                    <td><span class="status-badge ${bClass}">${status}</span></td>
+                </tr>`;
+        });
+    }
+
+    function filterComplaints() {
+        const query = document.getElementById('adminSearch').value.toLowerCase();
+        const filtered = allComplaints.filter(item => 
+            (item.complaintId || '').toString().toLowerCase().includes(query) || 
+            (item.mobile || '').toString().includes(query) ||
+            (item.name || '').toLowerCase().includes(query)
+        );
+        renderTable(filtered);
     }
 
     function viewDetail(key) {
@@ -195,21 +254,29 @@ const firebaseConfig = {
         db.ref('complaints/' + key).once('value').then((snap) => {
             const d = snap.val();
             const status = (d.status || 'pending').toLowerCase();
+            const isReopened = status === 'reopened' || status === 're-opened';
             
             document.getElementById('modalTitle').innerText = "Complaint ID: " + (d.complaintId || key);
             
-            document.getElementById('officerRemarks').value = d.officer_remarks || "Officer has acknowledged and started work on this grievance.";
+            const currentRemarks = d.officer_remarks || "";
+            document.getElementById('officerRemarks').value = isReopened ? "" : 
+                (currentRemarks === "" ? "Officer has acknowledged and started work on this grievance." : currentRemarks);
+            
             document.getElementById('officerRemarks').disabled = (status === 'resolved');
 
-            document.getElementById('startWorkBtn').style.display = (status === 'pending') ? 'block' : 'none';
+            document.getElementById('startWorkBtn').style.display = (status === 'pending' || isReopened) ? 'block' : 'none';
+            document.getElementById('startWorkLabel').innerText = isReopened ? "RESTART WORK" : "START WORK";
             document.getElementById('resolveBtn').style.display = (status !== 'resolved') ? 'block' : 'none';
 
             let html = `
                 <div class="detail-item"><i class="bi bi-calendar-event"></i><span><strong>Registered:</strong> ${formatTime(d.createdAt || d.timestamp)}</span></div>
                 ${d.work_started_at ? `<div class="detail-item"><i class="bi bi-play-circle-fill"></i><span><strong>Work Started:</strong> ${formatTime(d.work_started_at)}</span></div>` : ''}
-                ${d.resolved_at ? `<div class="detail-item"><i class="bi bi-check-circle-fill"></i><span><strong>Resolved:</strong> ${formatTime(d.resolved_at)}</span></div>` : ''}
+                ${d.resolved_at && !isReopened ? `<div class="detail-item"><i class="bi bi-check-circle-fill"></i><span><strong>Resolved:</strong> ${formatTime(d.resolved_at)}</span></div>` : ''}
                 <div class="detail-item"><i class="bi bi-telephone"></i><span><strong>Citizen Contact:</strong> ${d.mobile || 'N/A'}</span></div>
                 <div class="description-box"><strong>Description:</strong><br>${d.description || "N/A"}</div>
+                ${isReopened ? `<div class="p-2 mb-2 rounded" style="background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; font-size: 0.85rem;">
+                    <strong>Citizen Reason for Re-opening:</strong><br>${currentRemarks || "No reason provided."}
+                </div>` : ''}
             `;
             document.getElementById('modalDataContent').innerHTML = html;
             detailsModal.show();
