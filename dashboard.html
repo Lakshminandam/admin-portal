@@ -12,44 +12,40 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <style>
-        :root { --primary: #003366; --accent: #FFD700; --bg: #f1f5f9; --teal-dark: #00695c; }
-        body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; }
-        .sidebar { background: var(--primary); min-height: 100vh; color: white; padding-top: 20px; position: fixed; width: inherit; z-index: 100; }
-        .nav-link { color: rgba(255,255,255,0.8); transition: 0.3s; margin: 5px 15px; border-radius: 8px; text-decoration: none; display: block; padding: 10px; }
-        .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.1); color: white; }
-        .main-content { padding: 30px; margin-left: 16.666667%; }
-        .stat-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-bottom: 4px solid var(--primary); }
-        .data-card { background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
-        .table thead { background: #f8fafc; color: #64748b; font-size: 0.8rem; text-transform: uppercase; }
-        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: white; text-transform: uppercase; }
+        :root { --primary: #003366; --bg: #f1f5f9; --teal: #00695c; }
+        body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; }
         
-        /* Status Colors */
-        .bg-pending { background-color: #d32f2f; }
-        .bg-inprogress { background-color: #ef6c00; }
-        .bg-resolved { background-color: #2e7d32; }
-        .bg-reopened { background-color: #000000; }
+        .sidebar { background: var(--primary); min-height: 100vh; color: white; position: fixed; width: 16.666667%; padding-top: 20px; z-index: 100; }
+        .main-content { margin-left: 16.666667%; padding: 30px; }
+        
+        /* Flutter Card Style */
+        .complaint-card { background: white; border-radius: 15px; border: none; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden; transition: 0.3s; }
+        .reopened-card { border: 1.5px solid #dc3545 !important; }
+        
+        /* Status Badges */
+        .status-chip { font-size: 10px; font-weight: bold; padding: 3px 12px; border-radius: 20px; text-transform: uppercase; }
+        .s-pending { background: #ffebee; color: #c62828; }
+        .s-progress { background: #fff3e0; color: #ef6c00; }
+        .s-resolved { background: #e8f5e9; color: #2e7d32; }
+        .s-reopened { background: #000; color: #fff; }
 
-        /* Blinking Badge for Reopened */
+        /* Priority Tags */
+        .priority-tag { font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: bold; margin-left: 10px; border: 1px solid; }
+
+        /* Blinking Logic */
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-        .blink-badge { background: #ff4444; color: white; font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: bold; animation: blink 0.8s infinite; margin-left: 8px; }
+        .blink-badge { background: #dc3545; color: white; font-size: 9px; padding: 2px 6px; border-radius: 4px; animation: blink 0.8s infinite; }
 
-        /* Detail Modal Styles */
-        .modal-content { border-radius: 15px; border: none; }
-        .detail-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.85rem; }
-        .detail-item i { color: var(--teal-dark); margin-right: 10px; font-size: 1rem; }
-        .description-box { background: #fdfdfd; padding: 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; }
-        .priority-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
-
-        /* Search Box Styles */
-        .search-container { position: relative; max-width: 400px; }
-        .search-container i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; }
-        .search-container input { padding-left: 35px; border-radius: 10px; border: 1px solid #e2e8f0; }
-
-        /* Buttons */
-        .btn-start { background-color: #ef6c00; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
-        .btn-resolve { background-color: #2e7d32; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
+        /* Buttons matching your Flutter Style */
+        .btn-start { background-color: #ef6c00; color: white; border-radius: 20px; border: none; font-weight: bold; font-size: 12px; padding: 8px 20px; }
+        .btn-resolve { background-color: #2e7d32; color: white; border-radius: 20px; border: none; font-weight: bold; font-size: 12px; padding: 8px 20px; }
         
-        @media (max-width: 768px) { .sidebar { position: relative; min-height: auto; width: 100%; } .main-content { margin-left: 0; } }
+        .detail-row { font-size: 13px; margin-bottom: 5px; display: flex; align-items: center; }
+        .detail-row i { color: var(--teal); margin-right: 8px; width: 18px; }
+
+        .remarks-area { font-size: 13px; border-radius: 10px; background: #f8fafc; }
+
+        @media (max-width: 768px) { .sidebar { position: relative; width: 100%; min-height: auto; } .main-content { margin-left: 0; } }
     </style>
 </head>
 <body>
@@ -59,71 +55,33 @@
         <div class="col-md-2 sidebar d-none d-md-block shadow">
             <h5 class="text-center mb-4 fw-bold"><i class="bi bi-lightning-charge-fill text-warning"></i> ADMIN</h5>
             <nav class="nav flex-column">
-                <a class="nav-link active" href="#"><i class="bi bi-grid-1x2 me-2"></i> Complaints</a>
-                <a class="nav-link" href="javascript:void(0)" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i> Logout</a>
+                <a class="nav-link text-white mb-2" href="#"><i class="bi bi-grid-1x2 me-2"></i> Complaints</a>
+                <a class="nav-link text-white-50" href="javascript:void(0)" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i> Logout</a>
             </nav>
         </div>
 
         <div class="col-md-10 main-content">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3 class="fw-bold">Grievance Dashboard</h3>
-                <div class="search-container">
-                    <i class="bi bi-search"></i>
-                    <input type="text" id="adminSearch" class="form-control" placeholder="Search ID or Mobile..." onkeyup="filterComplaints()">
+                <div class="input-group" style="max-width: 300px;">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                    <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search ID or Mobile..." onkeyup="loadComplaints()">
                 </div>
             </div>
 
             <div class="row g-3 mb-4 text-center">
-                <div class="col-md-3"><div class="stat-card" style="border-bottom-color: #d32f2f;"><div class="small fw-bold">Pending</div><h2 id="pendingCount">0</h2></div></div>
-                <div class="col-md-3"><div class="stat-card" style="border-bottom-color: #ef6c00;"><div class="small fw-bold">In Progress</div><h2 id="progressCount">0</h2></div></div>
-                <div class="col-md-3"><div class="stat-card" style="border-bottom-color: #2e7d32;"><div class="small fw-bold">Resolved</div><h2 id="resolvedCount">0</h2></div></div>
-                <div class="col-md-3"><div class="stat-card" style="border-bottom-color: #000;"><div class="small fw-bold">Reopened</div><h2 id="reopenedCount">0</h2></div></div>
+                <div class="col-md-3"><div class="p-3 bg-white rounded shadow-sm border-bottom border-danger border-4">
+                    <small class="text-muted fw-bold">PENDING</small><h3 id="count-pending">0</h3></div></div>
+                <div class="col-md-3"><div class="p-3 bg-white rounded shadow-sm border-bottom border-warning border-4">
+                    <small class="text-muted fw-bold">IN PROGRESS</small><h3 id="count-progress">0</h3></div></div>
+                <div class="col-md-3"><div class="p-3 bg-white rounded shadow-sm border-bottom border-success border-4">
+                    <small class="text-muted fw-bold">RESOLVED</small><h3 id="count-resolved">0</h3></div></div>
+                <div class="col-md-3"><div class="p-3 bg-white rounded shadow-sm border-bottom border-dark border-4">
+                    <small class="text-muted fw-bold">REOPENED</small><h3 id="count-reopened">0</h3></div></div>
             </div>
 
-            <div class="data-card">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th class="ps-4">ID</th>
-                                <th>Citizen Name</th>
-                                <th>Mobile</th>
-                                <th>District</th>
-                                <th>Priority</th>
-                                <th>Status</th> 
-                            </tr>
-                        </thead>
-                        <tbody id="complaintsTable">
-                            <tr><td colspan="6" class="text-center py-4 text-muted">Loading grievances...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content shadow-lg">
-            <div class="modal-header">
-                <h6 class="modal-title fw-bold mb-0" id="modalTitle">Complaint Details</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div id="modalDataContent"></div>
-                <div class="mt-3">
-                    <label class="fw-bold small mb-1" style="color: #00796b;">OFFICER REMARKS / ACTION TAKEN:</label>
-                    <textarea id="officerRemarks" class="form-control" rows="4" placeholder="Enter update here..."></textarea>
-                </div>
-            </div>
-            <div class="modal-footer border-0 d-flex justify-content-end gap-3 pb-4 px-4">
-                <button id="startWorkBtn" class="btn-start" onclick="updateStatus('in progress')">
-                    <i class="bi bi-play-fill me-1"></i> <span id="startWorkLabel">START WORK</span>
-                </button>
-                <button id="resolveBtn" class="btn-resolve" onclick="updateStatus('resolved')">
-                    <i class="bi bi-check2-circle me-1"></i> RESOLVE
-                </button>
+            <div id="complaintsContainer">
+                <div class="text-center py-5 text-muted">Loading grievances...</div>
             </div>
         </div>
     </div>
@@ -141,170 +99,147 @@ const firebaseConfig = {
     appId: "1:138166783170:web:ae54b798e700d4a03e7f5b",
     measurementId: "G-K9KERE9NMT"
   };
-    let auth, db, activeKey = null;
-    let allComplaints = []; 
-    const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
+    let auth, db;
 
     function initFirebase() {
-        if (typeof firebaseConfig !== 'undefined') {
-            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-            auth = firebase.auth(); db = firebase.database();
-            setupAuthListener();
-        }
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        auth = firebase.auth(); db = firebase.database();
+        auth.onAuthStateChanged(user => { if(user) loadComplaints(); else window.location.href='index.html'; });
     }
 
-    function setupAuthListener() {
-        auth.onAuthStateChanged((user) => {
-            if (user) { loadComplaints(); }
-            else { window.location.href = 'admin.html'; }
-        });
-    }
-
-    function getPriorityValue(priority) {
-        switch ((priority || '').toUpperCase()) {
-            case 'HIGH': return 1;
-            case 'MEDIUM': return 2;
-            case 'LOW': return 3;
-            default: return 4;
-        }
+    function getPriorityVal(p) {
+        p = (p || '').toUpperCase();
+        return p === 'HIGH' ? 1 : (p === 'MEDIUM' ? 2 : (p === 'LOW' ? 3 : 4));
     }
 
     function formatTime(ts) {
         if (!ts) return "Not available";
-        return new Date(ts).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+        return new Date(ts).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true });
     }
 
     function loadComplaints() {
-        db.ref('complaints').on('value', (snapshot) => {
-            allComplaints = [];
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        db.ref('complaints').on('value', snap => {
+            const container = document.getElementById('complaintsContainer');
+            container.innerHTML = '';
+            let list = [];
             let counts = { pending: 0, progress: 0, resolved: 0, reopened: 0 };
-            
-            snapshot.forEach((child) => {
+
+            snap.forEach(child => {
                 const data = child.val();
                 data.key = child.key;
                 const status = (data.status || 'pending').toLowerCase();
-                
-                if (status === 'in progress') counts.progress++;
-                else if (status === 'resolved') counts.resolved++;
-                else if (status === 'reopened' || status === 're-opened') counts.reopened++;
+                const id = (data.complaintId || data.key).toString().toLowerCase();
+                const mob = (data.mobile || '').toString();
+
+                if(status === 'resolved') counts.resolved++;
+                else if(status === 'in progress') counts.progress++;
+                else if(status.includes('reopened') || status.includes('re-opened')) counts.reopened++;
                 else counts.pending++;
 
-                allComplaints.push(data);
+                if(search === "" || id.includes(search) || mob.includes(search)) {
+                    list.push(data);
+                }
             });
 
-            allComplaints.sort((a, b) => getPriorityValue(a.priority) - getPriorityValue(b.priority));
+            list.sort((a, b) => getPriorityVal(a.priority) - getPriorityVal(b.priority));
 
-            document.getElementById('pendingCount').innerText = counts.pending;
-            document.getElementById('progressCount').innerText = counts.progress;
-            document.getElementById('resolvedCount').innerText = counts.resolved;
-            document.getElementById('reopenedCount').innerText = counts.reopened;
+            document.getElementById('count-pending').innerText = counts.pending;
+            document.getElementById('count-progress').innerText = counts.progress;
+            document.getElementById('count-resolved').innerText = counts.resolved;
+            document.getElementById('count-reopened').innerText = counts.reopened;
 
-            renderTable(allComplaints);
+            list.forEach(item => {
+                const status = (item.status || 'pending').toLowerCase();
+                const isReopened = status.includes('reopen') || status.includes('re-opened');
+                const p = (item.priority || 'Medium').toUpperCase();
+                const pColor = p === 'HIGH' ? '#dc3545' : (p === 'LOW' ? '#2e7d32' : '#f57c00');
+                
+                const currentRemarks = item.officer_remarks || "";
+                const defaultText = isReopened ? "" : (currentRemarks === "" ? "Officer has acknowledged and started work on this grievance." : currentRemarks);
+
+                container.innerHTML += `
+                    <div class="card complaint-card ${isReopened ? 'reopened-card' : ''}">
+                        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center" 
+                             style="cursor:pointer" data-bs-toggle="collapse" data-bs-target="#collapse-${item.key}">
+                            <div>
+                                <span class="fw-bold text-primary">ID: ${item.complaintId || item.key}</span>
+                                <span class="priority-tag" style="color:${pColor}; border-color:${pColor}; background:${pColor}10">${p}</span>
+                                ${isReopened ? '<span class="blink-badge ms-2">RE-OPENED</span>' : ''}
+                            </div>
+                            <span class="status-chip ${status === 'resolved' ? 's-resolved' : (status === 'in progress' ? 's-progress' : (isReopened ? 's-reopened' : 's-pending'))}">
+                                ${status}
+                            </span>
+                        </div>
+                        
+                        <div id="collapse-${item.key}" class="collapse">
+                            <div class="card-body border-top p-4">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="detail-row"><i class="bi bi-calendar-check"></i> <strong>Registered:</strong> ${formatTime(item.createdAt || item.timestamp)}</div>
+                                        <div class="detail-row"><i class="bi bi-telephone"></i> <strong>Citizen:</strong> ${item.mobile || 'N/A'}</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        ${item.work_started_at ? `<div class="detail-row"><i class="bi bi-play-circle"></i> <strong>Started:</strong> ${formatTime(item.work_started_at)}</div>` : ''}
+                                        ${item.resolved_at && !isReopened ? `<div class="detail-row"><i class="bi bi-check-circle"></i> <strong>Resolved:</strong> ${formatTime(item.resolved_at)}</div>` : ''}
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3 p-3 rounded" style="background:#f1f5f9; border-left: 4px solid var(--teal)">
+                                    <small class="text-uppercase fw-bold text-muted" style="font-size:10px">Description</small>
+                                    <p class="mb-0 small">${item.description || 'No details provided.'}</p>
+                                </div>
+
+                                ${isReopened ? `
+                                    <div class="mt-2 p-2 rounded" style="background:#fff5f5; border: 1px solid #feb2b2; color: #c53030">
+                                        <small class="fw-bold">RE-OPEN REASON:</small>
+                                        <p class="mb-0 small italic"><em>${currentRemarks || 'No feedback provided.'}</em></p>
+                                    </div>
+                                ` : ''}
+
+                                <div class="mt-4">
+                                    <label class="fw-bold small text-teal mb-1">OFFICER REMARKS / ACTION TAKEN</label>
+                                    <textarea id="rem-${item.key}" class="form-control remarks-area" rows="3" ${status === 'resolved' ? 'disabled' : ''}>${defaultText}</textarea>
+                                </div>
+
+                                <div class="mt-3 d-flex justify-content-end gap-2">
+                                    ${(status === 'pending' || isReopened) ? `
+                                        <button class="btn-start" onclick="updateStatus('${item.key}', 'in progress')">
+                                            <i class="bi bi-play-fill"></i> ${isReopened ? 'RESTART WORK' : 'START WORK'}
+                                        </button>
+                                    ` : ''}
+                                    ${status !== 'resolved' ? `
+                                        <button class="btn-resolve" onclick="updateStatus('${item.key}', 'resolved')">
+                                            <i class="bi bi-check2-circle"></i> RESOLVE
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
         });
     }
 
-    function renderTable(dataList) {
-        const tableBody = document.getElementById('complaintsTable');
-        tableBody.innerHTML = '';
-
-        if (dataList.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No grievances found.</td></tr>';
-            return;
-        }
-
-        dataList.forEach((data) => {
-            const status = (data.status || 'pending').toLowerCase();
-            const p = (data.priority || 'Medium').toUpperCase();
-            const isReopened = status === 'reopened' || status === 're-opened';
-            
-            let bClass = 'bg-pending';
-            if (status === 'in progress') bClass = 'bg-inprogress';
-            else if (status === 'resolved') bClass = 'bg-resolved';
-            else if (isReopened) bClass = 'bg-reopened';
-
-            const pColor = p === 'HIGH' ? '#dc3545' : (p === 'LOW' ? '#2e7d32' : '#f57c00');
-
-            tableBody.innerHTML += `
-                <tr onclick="viewDetail('${data.key}')" style="cursor: pointer;">
-                    <td class="ps-4 fw-bold text-primary">
-                        ${data.complaintId || data.key}
-                        ${isReopened ? '<span class="blink-badge">RE-OPENED</span>' : ''}
-                    </td>
-                    <td><div class="fw-bold">${data.name || 'N/A'}</div></td>
-                    <td>${data.mobile || 'N/A'}</td>
-                    <td>${data.district || 'N/A'}</td>
-                    <td><span class="priority-tag" style="background: ${pColor}15; color: ${pColor}; border: 1px solid ${pColor}">${p}</span></td>
-                    <td><span class="status-badge ${bClass}">${status}</span></td>
-                </tr>`;
-        });
-    }
-
-    function filterComplaints() {
-        const query = document.getElementById('adminSearch').value.toLowerCase();
-        const filtered = allComplaints.filter(item => 
-            (item.complaintId || '').toString().toLowerCase().includes(query) || 
-            (item.mobile || '').toString().includes(query) ||
-            (item.name || '').toLowerCase().includes(query)
-        );
-        renderTable(filtered);
-    }
-
-    function viewDetail(key) {
-        activeKey = key;
-        db.ref('complaints/' + key).once('value').then((snap) => {
-            const d = snap.val();
-            const status = (d.status || 'pending').toLowerCase();
-            const isReopened = status === 'reopened' || status === 're-opened';
-            
-            document.getElementById('modalTitle').innerText = "Complaint ID: " + (d.complaintId || key);
-            
-            const currentRemarks = d.officer_remarks || "";
-            document.getElementById('officerRemarks').value = isReopened ? "" : 
-                (currentRemarks === "" ? "Officer has acknowledged and started work on this grievance." : currentRemarks);
-            
-            document.getElementById('officerRemarks').disabled = (status === 'resolved');
-
-            document.getElementById('startWorkBtn').style.display = (status === 'pending' || isReopened) ? 'block' : 'none';
-            document.getElementById('startWorkLabel').innerText = isReopened ? "RESTART WORK" : "START WORK";
-            document.getElementById('resolveBtn').style.display = (status !== 'resolved') ? 'block' : 'none';
-
-            let html = `
-                <div class="detail-item"><i class="bi bi-calendar-event"></i><span><strong>Registered:</strong> ${formatTime(d.createdAt || d.timestamp)}</span></div>
-                ${d.work_started_at ? `<div class="detail-item"><i class="bi bi-play-circle-fill"></i><span><strong>Work Started:</strong> ${formatTime(d.work_started_at)}</span></div>` : ''}
-                ${d.resolved_at && !isReopened ? `<div class="detail-item"><i class="bi bi-check-circle-fill"></i><span><strong>Resolved:</strong> ${formatTime(d.resolved_at)}</span></div>` : ''}
-                <div class="detail-item"><i class="bi bi-telephone"></i><span><strong>Citizen Contact:</strong> ${d.mobile || 'N/A'}</span></div>
-                <div class="description-box"><strong>Description:</strong><br>${d.description || "N/A"}</div>
-                ${isReopened ? `<div class="p-2 mb-2 rounded" style="background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; font-size: 0.85rem;">
-                    <strong>Citizen Reason for Re-opening:</strong><br>${currentRemarks || "No reason provided."}
-                </div>` : ''}
-            `;
-            document.getElementById('modalDataContent').innerHTML = html;
-            detailsModal.show();
-        });
-    }
-
-    function updateStatus(newStatus) {
-        const remarks = document.getElementById('officerRemarks').value.trim();
+    function updateStatus(key, newStatus) {
+        const remarks = document.getElementById(`rem-${key}`).value.trim();
         if (newStatus === 'resolved' && remarks === "") {
             alert("Please provide remarks before resolving.");
             return;
         }
 
-        let updates = {
-            status: newStatus,
-            officer_remarks: remarks
-        };
+        let updates = { status: newStatus, officer_remarks: remarks };
+        if (newStatus === 'in progress') updates.work_started_at = firebase.database.ServerValue.TIMESTAMP;
+        if (newStatus === 'resolved') updates.resolved_at = firebase.database.ServerValue.TIMESTAMP;
 
-        if (newStatus === 'in progress') updates['work_started_at'] = firebase.database.ServerValue.TIMESTAMP;
-        if (newStatus === 'resolved') updates['resolved_at'] = firebase.database.ServerValue.TIMESTAMP;
-
-        db.ref('complaints/' + activeKey).update(updates).then(() => {
-            detailsModal.hide();
+        db.ref('complaints/' + key).update(updates).then(() => {
+            alert(`Status updated to ${newStatus}`);
         });
     }
 
-    function logout() { auth.signOut().then(() => { window.location.href = 'index.html'; }); }
+    function logout() { auth.signOut().then(() => window.location.href='index.html'); }
     initFirebase();
 </script>
 </body>
-</html>  
+</html>
