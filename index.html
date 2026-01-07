@@ -229,7 +229,7 @@ const firebaseConfig = {
         speak(finishMsg, () => {
             setTimeout(() => {
                 submitFinalForm();
-            }, 800);
+            }, 1000);
         });
     }
 
@@ -284,14 +284,12 @@ const firebaseConfig = {
 
         db.ref('complaints/' + complaintID).set(complaintData)
         .then(() => {
-            const priorityBadgeColor = detectedPriority === "High" ? "#dc3545" : (detectedPriority === "Medium" ? "#ffc107" : "#28a745");
-
             Swal.fire({
                 title: 'Registration Successful!',
                 html: `
                     <div style="text-align: center;">
-                        <p>Your complaint has been registered with <b>${detectedPriority}</b> priority.</p>
-                        <div style="background: #f0f4f8; padding: 15px; border-radius: 10px; border: 2px solid ${priorityBadgeColor}; margin: 15px 0;">
+                        <p>Your complaint has been successfully registered.</p>
+                        <div style="background: #f0f4f8; padding: 15px; border-radius: 10px; border: 2px solid #003366; margin: 15px 0;">
                             <span style="font-size: 0.8rem; color: #666;">COMPLAINT ID</span><br>
                             <strong style="font-size: 1.4rem; color: #003366;">${complaintID}</strong>
                         </div>
