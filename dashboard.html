@@ -166,6 +166,7 @@ const firebaseConfig = {
                 const data = child.val();
                 const key = child.key;
                 const status = (data.status || 'pending').toLowerCase();
+                
                 const p = (data.priority || 'Medium').toUpperCase();
                 
                 let bClass = 'bg-pending';
@@ -216,6 +217,7 @@ const firebaseConfig = {
                 ${d.work_started_at ? `<div class="detail-item"><i class="bi bi-play-circle-fill"></i><span><strong>Work Started:</strong> ${formatTime(d.work_started_at)}</span></div>` : ''}
                 ${d.resolved_at ? `<div class="detail-item"><i class="bi bi-check-circle-fill"></i><span><strong>Resolved:</strong> ${formatTime(d.resolved_at)}</span></div>` : ''}
                 <div class="detail-item"><i class="bi bi-telephone"></i><span><strong>Citizen Contact:</strong> ${d.mobile || 'N/A'}</span></div>
+                <div class="detail-item"><i class="bi bi-exclamation-triangle-fill"></i><span><strong>AI Detected Priority:</strong> <span class="badge" style="background-color: ${d.priority === 'High' ? '#dc3545' : '#6c757d'}">${d.priority || 'Medium'}</span></span></div>
                 <div class="description-box"><strong>Description:</strong><br>${d.description || "N/A"}</div>
             `;
 
