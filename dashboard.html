@@ -203,7 +203,9 @@ const firebaseConfig = {
             
             document.getElementById('modalTitle').innerText = "Complaint ID: " + (d.complaintId || key);
             
-            document.getElementById('officerRemarks').value = d.officer_remarks || "";
+            const defaultSentence = "Officer has acknowledged and started work on this grievance.";
+            document.getElementById('officerRemarks').value = d.officer_remarks || defaultSentence;
+            
             document.getElementById('officerRemarks').disabled = false; 
 
             document.getElementById('startWorkBtn').style.display = (status === 'pending' || isReopened) ? 'block' : 'none';
