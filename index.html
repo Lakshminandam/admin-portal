@@ -153,13 +153,23 @@ const firebaseConfig = {
         return string.charAt(0).toUpperCase() + string.slice(1);
     }
 
+    function refineVoiceInput(text, fieldId) {
+        let cleanText = text.trim().toLowerCase();
+        if (fieldId === "field_gender") {
+            if (cleanText.includes("mail") || cleanText === "male") return "Male";
+            if (cleanText.includes("female") || cleanText.includes("shemail")) return "Female";
+            if (cleanText.includes("other") || cleanText.includes("trans")) return "Other";
+        }
+        if (fieldId === "field_pincode") return cleanText.replace(/\D/g, '').slice(-6);
+        if (fieldId === "field_mobile") return cleanText.replace(/\D/g, '').slice(-10);
+        if (fieldId === "field_age") return cleanText.replace(/\D/g, '');
+        return capitalizeFirstLetter(text);
+    }
+
     function showPage(pageId) {
         document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
         document.getElementById(pageId).classList.add('active-page');
-        
-        if(pageId === 'complaint') {
-            checkAndFillMobile();
-        }
+        if(pageId === 'complaint') checkAndFillMobile();
     }
 
     function checkAndFillMobile() {
@@ -167,14 +177,11 @@ const firebaseConfig = {
         let mobileFromUrl = urlParams.get('phone');
         if (mobileFromUrl) {
             mobileFromUrl = mobileFromUrl.replace(/\D/g, '').slice(-10);
-            const mobileInput = document.getElementById('field_mobile');
-            mobileInput.value = mobileFromUrl;
+            document.getElementById('field_mobile').value = mobileFromUrl;
         }
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-        checkAndFillMobile();
-    });
+    window.addEventListener('DOMContentLoaded', checkAndFillMobile);
 
     function startVoiceAI() {
         currentStep = 0;
@@ -200,12 +207,7 @@ const firebaseConfig = {
                 recognition.start();
                 recognition.onresult = (event) => {
                     let text = event.results[0][0].transcript;
-                    if(q.id === "field_pincode") {
-                        text = text.replace(/\D/g, '').slice(-6);
-                    } else {
-                        text = capitalizeFirstLetter(text);
-                    }
-
+                    text = refineVoiceInput(text, q.id);
                     inputField.value = text;
                     inputField.classList.remove('voice-active');
                     currentStep++;
@@ -225,28 +227,19 @@ const firebaseConfig = {
         const finishMsg = "Thank you. All details have been collected. Submitting your complaint now.";
         document.getElementById('ai_status').innerText = finishMsg;
         document.getElementById('submitBtn').disabled = false;
-        
-        speak(finishMsg, () => {
-            setTimeout(() => {
-                submitFinalForm();
-            }, 1000);
-        });
+        speak(finishMsg, () => setTimeout(submitFinalForm, 1000));
     }
 
     function _generateComplaintId() {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ123456789';
         let randomStr = '';
-        for (let i = 0; i < 5; i++) {
-            const randomIndex = Math.floor(Math.random() * chars.length);
-            randomStr += chars.charAt(randomIndex);
-        }
+        for (let i = 0; i < 5; i++) randomStr += chars.charAt(Math.floor(Math.random() * chars.length));
         return "CP" + randomStr;
     }
 
     async function submitFinalForm() {
         const complaintID = _generateComplaintId();
         const descriptionText = document.getElementById('field_complaint').value;
-        
         let detectedPriority = "Medium"; 
         document.getElementById('ai_status').innerText = "Analyzing Priority with AI...";
 
@@ -260,9 +253,7 @@ const firebaseConfig = {
                 const aiResult = await response.json();
                 detectedPriority = aiResult.priority;
             }
-        } catch (e) {
-            console.log("AI Server error, using default priority.");
-        }
+        } catch (e) { console.log("AI Server error"); }
         
         const complaintData = {
             complaintId: complaintID,
@@ -286,43 +277,41 @@ const firebaseConfig = {
         .then(() => {
             Swal.fire({
                 title: 'Registration Successful!',
-                html: `
-                    <div style="text-align: center;">
-                        <p>Your complaint has been successfully registered.</p>
-                        <div style="background: #f0f4f8; padding: 15px; border-radius: 10px; border: 2px solid #003366; margin: 15px 0;">
-                            <span style="font-size: 0.8rem; color: #666;">COMPLAINT ID</span><br>
-                            <strong style="font-size: 1.4rem; color: #003366;">${complaintID}</strong>
-                        </div>
-                    </div>
-                `,
+                html: `<div style="text-align: center;"><p>Registered successfully.</p><div style="background: #f0f4f8; padding: 15px; border-radius: 10px; border: 2px solid #003366; margin: 15px 0;"><span style="font-size: 0.8rem; color: #666;">COMPLAINT ID</span><br><strong style="font-size: 1.4rem; color: #003366;">${complaintID}</strong></div></div>`,
                 icon: 'success',
-                confirmButtonText: 'GO TO DASHBOARD',
-                allowOutsideClick: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    try {
-                        if (window.Toaster && window.Toaster.postMessage) {
-                            window.Toaster.postMessage("completed");
-                        } else {
-                            window.location.reload();
-                        }
-                    } catch (e) {
-                        window.location.reload();
-                    }
-                }
+                confirmButtonText: 'GO TO HOME'
+            }).then(() => {
+                if (window.Toaster && window.Toaster.postMessage) window.Toaster.postMessage("completed");
+                else window.location.reload();
             });
-        })
-        .catch((error) => {
-            Swal.fire('Error', 'Failed to save to database: ' + error.message, 'error');
-        });
+        }).catch((error) => Swal.fire('Error', error.message, 'error'));
     }
 
     function speak(text, callback) {
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(text);
+        
+        let voices = window.speechSynthesis.getVoices();
+        
+        let selectedVoice = voices.find(voice => 
+            voice.name.includes('Female') || 
+            voice.name.includes('Google US English') || 
+            voice.name.includes('Samantha') ||
+            voice.name.includes('Zira') ||
+            voice.name.includes('Microsoft Zira')
+        );
+
+        if (selectedVoice) {
+            msg.voice = selectedVoice;
+        }
+
+        msg.rate = 1.0;  
+        msg.pitch = 1.1; 
         msg.onend = callback;
         window.speechSynthesis.speak(msg);
     }
+
+    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
 </script>
 </body>
 </html>
