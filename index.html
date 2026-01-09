@@ -270,19 +270,10 @@
                 title: 'Registration Successful!',
                 html: `<div style="text-align: center;"><p>Your complaint has been successfully registered.</p><div style="background: #f0f4f8; padding: 15px; border-radius: 10px; border: 2px solid #003366; margin: 15px 0;"><span style="font-size: 0.8rem; color: #666;">COMPLAINT ID</span><br><strong style="font-size: 1.4rem; color: #003366;">${complaintID}</strong></div></div>`,
                 icon: 'success',
-                confirmButtonText: 'DONE'
+                confirmButtonText: 'GO TO HOME'
             }).then(() => {
-                // NOTIFY FLUTTER WEB
-                if (window.opener) {
-                    window.opener.postMessage("completed", "*");
-                }
-                
-                // NOTIFY FLUTTER MOBILE WEBVIEW
-                if (window.Toaster && window.Toaster.postMessage) {
-                    window.Toaster.postMessage("completed");
-                } else {
-                    window.location.reload();
-                }
+                if (window.Toaster && window.Toaster.postMessage) window.Toaster.postMessage("completed");
+                else window.location.reload();
             });
         }).catch((error) => Swal.fire('Error', error.message, 'error'));
     }
@@ -290,7 +281,9 @@
     function speak(text, callback) {
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(text);
+        
         let voices = window.speechSynthesis.getVoices();
+        
         let selectedVoice = voices.find(voice => 
             voice.name.includes('Female') || 
             voice.name.includes('Google US English') || 
@@ -298,7 +291,11 @@
             voice.name.includes('Zira') ||
             voice.name.includes('Microsoft Zira')
         );
-        if (selectedVoice) msg.voice = selectedVoice;
+
+        if (selectedVoice) {
+            msg.voice = selectedVoice;
+        }
+
         msg.rate = 1.0;  
         msg.pitch = 1.1; 
         msg.onend = callback;
