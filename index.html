@@ -194,7 +194,7 @@ const firebaseConfig = {
         { id: "field_name", prompt: "Tell me your full name." },
         { id: "field_mobile", prompt: "Tell me your mobile number." },
         { id: "field_circle", prompt: "Which circle do you belong to? Say Vijayawada, Guntur, or Prakasam." },
-        { id: "field_division", prompt: "" }, 
+        { id: "field_division", prompt: "" },
         { id: "field_email", prompt: "Tell me your email address." },
         { id: "field_address", prompt: "What is your address?" },
         { id: "field_type", prompt: "Choose a category: Billing, Line, Pole, SC Wire, Supply Failure, Transformer, Voltage, or Incident." },
@@ -212,6 +212,14 @@ const firebaseConfig = {
     function refineVoiceInput(text, fieldId) {
         let cleanText = text.trim().toLowerCase();
         
+        if (fieldId === "field_email") {
+            return cleanText
+                .replace(/\s+/g, '')               
+                .replace(/attherate/g, '@')        
+                .replace(/dot/g, '.')              
+                .replace(/underscore/g, '_');      
+        }
+
         if (fieldId === "field_circle") {
             if (cleanText.includes("vija")) return "Vijayawada";
             if (cleanText.includes("gun")) return "Guntur";
@@ -360,10 +368,7 @@ const firebaseConfig = {
                 html: `<div style="text-align: center;"><p>ID: <strong>${complaintID}</strong></p></div>`,
                 icon: 'success',
                 confirmButtonText: 'GO TO HOME'
-            }).then(() => {
-                if (window.Toaster && window.Toaster.postMessage) window.Toaster.postMessage("completed");
-                else window.location.reload();
-            });
+            }).then(() => window.location.reload());
         }).catch((error) => Swal.fire('Error', error.message, 'error'));
     }
 
@@ -377,8 +382,7 @@ const firebaseConfig = {
             voice.name.includes('Microsoft Zira')
         );
         if (selectedVoice) msg.voice = selectedVoice;
-        msg.rate = 0.9;  
-        msg.pitch = 1.1; 
+        msg.rate = 0.9;
         msg.onend = callback;
         window.speechSynthesis.speak(msg);
     }
