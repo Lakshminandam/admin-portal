@@ -38,7 +38,6 @@
             font-size: 0.8rem; font-weight: bold; display: none; z-index: 10;
         }
 
-        /* Options Overlay */
         #options-overlay {
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: white; border: 3px solid var(--primary); padding: 20px; border-radius: 15px;
@@ -47,7 +46,9 @@
         .option-item { padding: 8px; border-bottom: 1px solid #eee; color: #003366; font-weight: 500; }
 
         .voice-active { border: 2px solid #007bff !important; background-color: #e7f3ff !important; box-shadow: 0 0 10px rgba(0, 123, 255, 0.2); }
-        .ai-status-box { background: #003366; color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: center; }
+        .ai-status-box { background: #003366; color: white; padding: 20px; border-radius: 8px; margin-bottom: 10px; text-align: center; min-height: 80px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        .ai-text-display { font-size: 1.1rem; font-weight: 500; font-style: italic; color: #FFD700; }
+        
         .mic-btn { background: #3f51b5; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 1.5rem; transition: 0.3s; }
         .btn-submit-row { background-color: #007bff; border: none; padding: 15px; font-weight: bold; color: white; width: 100%; border-radius: 0 0 8px 8px; cursor: pointer; text-transform: uppercase; }
         .btn-submit-row:disabled { background-color: #6c757d; cursor: not-allowed; }
@@ -89,7 +90,10 @@
         <div class="row justify-content-center">
             <div class="col-lg-10">
                 <div class="ai-status-box" id="ai_header">
-                    <i class="bi bi-robot me-2"></i> <span id="ai_status">Click the Mic to start automated filing</span>
+                    <div>
+                        <i class="bi bi-robot me-2"></i> 
+                        <span id="ai_status" class="ai-text-display">Click the Mic to start automated filing</span>
+                    </div>
                 </div>
 
                 <table class="complaint-table">
@@ -141,7 +145,7 @@ const firebaseConfig = {
         { id: "field_name", prompt: "Tell me your full name." },
         { id: "field_mobile", prompt: "Tell me your mobile number." },
         { id: "field_circle", prompt: "Which circle? Vijayawada, Guntur, or Prakasam.", options: Object.keys(circleData) },
-        { id: "field_division", prompt: "" }, 
+        { id: "field_division", prompt: "" },
         { id: "field_email", prompt: "Tell me your email address." },
         { id: "field_address", prompt: "What is your address?" },
         { id: "field_type", prompt: "Choose category: Billing, Line, Pole, SC Wire, Supply Failure, Transformer, Voltage, or Incident.", options: complaintTypes },
@@ -171,6 +175,22 @@ const firebaseConfig = {
         return capitalizeFirstLetter(text);
     }
 
+    function updateAIStatus(text) {
+        document.getElementById('ai_status').innerText = text;
+    }
+
+    function handleFailure(fieldId) {
+        clearInterval(timerCountdown);
+        recognition.stop();
+        document.getElementById('timer_' + fieldId).style.display = 'none';
+        
+        const retryMsg = "I didn't catch that. Let's try again.";
+        updateAIStatus(retryMsg);
+        speak(retryMsg, () => {
+            askNextQuestion();
+        });
+    }
+
     function startTimer(fieldId) {
         const badge = document.getElementById('timer_' + fieldId);
         badge.style.display = 'block';
@@ -180,14 +200,7 @@ const firebaseConfig = {
         timerCountdown = setInterval(() => {
             timeLeft--;
             badge.innerText = timeLeft + "s";
-            if (timeLeft <= 0) {
-                clearInterval(timerCountdown);
-                recognition.stop();
-                badge.style.display = 'none';
-                document.getElementById('options-overlay').style.display = 'none';
-                currentStep++;
-                askNextQuestion();
-            }
+            if (timeLeft <= 0) { handleFailure(fieldId); }
         }, 1000);
     }
 
@@ -208,7 +221,7 @@ const firebaseConfig = {
             if (q.id === "field_division") {
                 const circle = document.getElementById('field_circle').value;
                 const options = circleData[circle] || [];
-                q.prompt = `Under ${circle} Circle, please select one of the sections shown on screen.`;
+                q.prompt = `Under ${circle} Circle, select one section: ${options.join(", ")}.`;
                 title.innerText = "Select Section";
                 listContent.innerHTML = options.map(opt => `<div class="option-item">${opt}</div>`).join('');
                 overlay.style.display = 'block';
@@ -222,26 +235,29 @@ const firebaseConfig = {
             }
 
             inputField.classList.add('voice-active');
-            document.getElementById('ai_status').innerText = "AI is listening...";
+            updateAIStatus(q.prompt); 
             
             speak(q.prompt, () => {
+                updateAIStatus("Listening... (Speak Now)");
                 startTimer(q.id);
                 recognition.start();
+
                 recognition.onresult = (event) => {
                     clearInterval(timerCountdown);
-                    document.getElementById('timer_' + q.id).style.display = 'none';
-                    overlay.style.display = 'none';
-                    let text = event.results[0][0].transcript;
-                    inputField.value = refineVoiceInput(text, q.id);
-                    inputField.classList.remove('voice-active');
-                    currentStep++;
-                    setTimeout(askNextQuestion, 600);
+                    const text = event.results[0][0].transcript;
+                    if (text.trim() === "") {
+                        handleFailure(q.id);
+                    } else {
+                        document.getElementById('timer_' + q.id).style.display = 'none';
+                        overlay.style.display = 'none';
+                        inputField.value = refineVoiceInput(text, q.id);
+                        inputField.classList.remove('voice-active');
+                        currentStep++;
+                        setTimeout(askNextQuestion, 600);
+                    }
                 };
-                recognition.onerror = () => {
-                    clearInterval(timerCountdown);
-                    recognition.stop();
-                    setTimeout(askNextQuestion, 1000);
-                };
+
+                recognition.onerror = () => { handleFailure(q.id); };
             });
         } else {
             autoSubmitByAI();
@@ -249,23 +265,18 @@ const firebaseConfig = {
     }
 
     function autoSubmitByAI() {
-        const finishMsg = "All details collected. Submitting your complaint now.";
-        document.getElementById('ai_status').innerText = finishMsg;
+        const finishMsg = "All details collected. Submitting now.";
+        updateAIStatus(finishMsg);
         document.getElementById('submitBtn').disabled = false;
-        speak(finishMsg, () => setTimeout(submitFinalForm, 1500));
+        speak(finishMsg, () => setTimeout(submitFinalForm, 1000));
     }
 
-    function generateComplaintId() {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ123456789';
-        let randomStr = '';
-        for (let i = 0; i < 5; i++) randomStr += chars.charAt(Math.floor(Math.random() * chars.length));
-        return "CP" + randomStr;
-    }
+    function generateId() { return "CP" + Math.random().toString(36).substr(2, 5).toUpperCase(); }
 
     function submitFinalForm() {
-        const complaintID = generateComplaintId();
-        const complaintData = {
-            complaintId: complaintID,
+        const cid = generateId();
+        const data = {
+            complaintId: cid,
             serviceNumber: document.getElementById('field_service').value,
             name: document.getElementById('field_name').value,
             mobile: document.getElementById('field_mobile').value,
@@ -279,17 +290,8 @@ const firebaseConfig = {
             timestamp: Date.now()
         };
 
-        db.ref('complaints/' + complaintID).set(complaintData)
-        .then(() => {
-            Swal.fire({
-                title: 'Success!',
-                text: 'Your Complaint ID is: ' + complaintID,
-                icon: 'success',
-                confirmButtonText: 'OK'
-            }).then(() => window.location.reload());
-        })
-        .catch((error) => {
-            Swal.fire('Error', 'Submission failed: ' + error.message, 'error');
+        db.ref('complaints/' + cid).set(data).then(() => {
+            Swal.fire('Success', 'Complaint ID: ' + cid, 'success').then(() => window.location.reload());
         });
     }
 
