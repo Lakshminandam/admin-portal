@@ -125,19 +125,12 @@
     const db = firebase.database();
     const auth = firebase.auth();
 
-    let femaleVoice = null;
-    function loadVoices() {
-        let voices = window.speechSynthesis.getVoices();
-        femaleVoice = voices.find(v => v.name.includes('Female') || v.name.includes('Google UK English Female') || v.name.includes('Samantha') || v.name.includes('Zira'));
-        if(!femaleVoice) femaleVoice = voices[0];
-    }
-    window.speechSynthesis.onvoiceschanged = loadVoices;
-    loadVoices();
-
     auth.onAuthStateChanged((user) => {
         if (user) {
             const userPhone = user.phoneNumber ? user.phoneNumber.replace('+91', '') : "";
-            if(userPhone) { document.getElementById('field_mobile').value = userPhone; }
+            if(userPhone) {
+                document.getElementById('field_mobile').value = userPhone;
+            }
         }
     });
 
@@ -184,15 +177,20 @@
         return capitalizeFirstLetter(text);
     }
 
-    function updateAIStatus(text) { document.getElementById('ai_status').innerText = text; }
+    function updateAIStatus(text) {
+        document.getElementById('ai_status').innerText = text;
+    }
 
     function handleFailure(fieldId) {
         clearInterval(timerCountdown);
         recognition.stop();
         document.getElementById('timer_' + fieldId).style.display = 'none';
+        
         const retryMsg = "I didn't catch that. Let's try again.";
         updateAIStatus(retryMsg);
-        speak(retryMsg, () => { askNextQuestion(); });
+        speak(retryMsg, () => {
+            askNextQuestion();
+        });
     }
 
     function startTimer(fieldId) {
@@ -241,7 +239,9 @@
                 title.innerText = q.id === "field_circle" ? "Select Circle" : "Select Complaint Type";
                 listContent.innerHTML = q.options.map(opt => `<div class="option-item">${opt}</div>`).join('');
                 overlay.style.display = 'block';
-            } else { overlay.style.display = 'none'; }
+            } else {
+                overlay.style.display = 'none';
+            }
 
             inputField.classList.add('voice-active');
             updateAIStatus(q.prompt);
@@ -250,11 +250,13 @@
                 updateAIStatus("Listening... (Speak Now)");
                 startTimer(q.id);
                 recognition.start();
+
                 recognition.onresult = (event) => {
                     clearInterval(timerCountdown);
                     const text = event.results[0][0].transcript;
-                    if (text.trim() === "") { handleFailure(q.id); } 
-                    else {
+                    if (text.trim() === "") {
+                        handleFailure(q.id);
+                    } else {
                         document.getElementById('timer_' + q.id).style.display = 'none';
                         overlay.style.display = 'none';
                         inputField.value = refineVoiceInput(text, q.id);
@@ -263,9 +265,12 @@
                         setTimeout(askNextQuestion, 600);
                     }
                 };
+
                 recognition.onerror = () => { handleFailure(q.id); };
             });
-        } else { autoSubmitByAI(); }
+        } else {
+            autoSubmitByAI();
+        }
     }
 
     function autoSubmitByAI() {
@@ -293,6 +298,7 @@
             status: "Pending",
             timestamp: Date.now()
         };
+
         db.ref('complaints/' + cid).set(data).then(() => {
             Swal.fire('Success', 'Complaint ID: ' + cid, 'success').then(() => window.location.reload());
         });
@@ -301,14 +307,23 @@
     function speak(text, callback) {
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(text);
+        
+        const voices = window.speechSynthesis.getVoices();
+        const femaleVoice = voices.find(v => 
+            v.name.includes('Zira') || 
+            v.name.includes('Female') || 
+            (v.name.includes('Google') && v.name.includes('UK English'))
+        );
+
         if (femaleVoice) {
             msg.voice = femaleVoice;
         }
-        msg.pitch = 1.2; 
-        msg.rate = 0.9;  
+
         msg.onend = callback;
         window.speechSynthesis.speak(msg);
     }
+
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
 
     function showPage(pageId) {
         document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
