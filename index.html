@@ -10,6 +10,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
     <style>
         :root { --primary: #003366; --accent: #FFD700; --bg: #f8fafc; }
@@ -131,6 +132,23 @@ const firebaseConfig = {
 
     if (typeof firebaseConfig !== 'undefined') { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
+    const auth = firebase.auth();
+
+    let femaleVoice = null;
+    function loadVoices() {
+        let voices = window.speechSynthesis.getVoices();
+        femaleVoice = voices.find(v => v.name.includes('Female') || v.name.includes('Google UK English Female') || v.name.includes('Samantha') || v.name.includes('Zira'));
+        if(!femaleVoice) femaleVoice = voices[0];
+    }
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            const userPhone = user.phoneNumber ? user.phoneNumber.replace('+91', '') : "";
+            if(userPhone) { document.getElementById('field_mobile').value = userPhone; }
+        }
+    });
 
     const circleData = {
         "Vijayawada": ["Gunadala Section", "Nunna Section", "Governorpet", "Patamata", "Bhavanipuram", "Gannavaram", "Ibrahimpatnam", "Kanchikacherla", "Mylavaram", "Gudivada Division", "Machilipatnam Division", "Vuyyuru Division"],
@@ -143,7 +161,7 @@ const firebaseConfig = {
     const questions = [
         { id: "field_service", prompt: "Tell me your service number." },
         { id: "field_name", prompt: "Tell me your full name." },
-        { id: "field_mobile", prompt: "Tell me your mobile number." },
+        { id: "field_mobile", prompt: "Confirm or tell me your mobile number." },
         { id: "field_circle", prompt: "Which circle? Vijayawada, Guntur, or Prakasam.", options: Object.keys(circleData) },
         { id: "field_division", prompt: "" },
         { id: "field_email", prompt: "Tell me your email address." },
@@ -175,20 +193,15 @@ const firebaseConfig = {
         return capitalizeFirstLetter(text);
     }
 
-    function updateAIStatus(text) {
-        document.getElementById('ai_status').innerText = text;
-    }
+    function updateAIStatus(text) { document.getElementById('ai_status').innerText = text; }
 
     function handleFailure(fieldId) {
         clearInterval(timerCountdown);
         recognition.stop();
         document.getElementById('timer_' + fieldId).style.display = 'none';
-        
         const retryMsg = "I didn't catch that. Let's try again.";
         updateAIStatus(retryMsg);
-        speak(retryMsg, () => {
-            askNextQuestion();
-        });
+        speak(retryMsg, () => { askNextQuestion(); });
     }
 
     function startTimer(fieldId) {
@@ -214,6 +227,13 @@ const firebaseConfig = {
         if (currentStep < questions.length) {
             const q = questions[currentStep];
             const inputField = document.getElementById(q.id);
+
+            if (q.id === "field_mobile" && inputField.value !== "") {
+                currentStep++;
+                askNextQuestion();
+                return;
+            }
+
             const overlay = document.getElementById('options-overlay');
             const listContent = document.getElementById('options-list-content');
             const title = document.getElementById('overlay-title');
@@ -230,24 +250,20 @@ const firebaseConfig = {
                 title.innerText = q.id === "field_circle" ? "Select Circle" : "Select Complaint Type";
                 listContent.innerHTML = q.options.map(opt => `<div class="option-item">${opt}</div>`).join('');
                 overlay.style.display = 'block';
-            } else {
-                overlay.style.display = 'none';
-            }
+            } else { overlay.style.display = 'none'; }
 
             inputField.classList.add('voice-active');
-            updateAIStatus(q.prompt); 
+            updateAIStatus(q.prompt);
             
             speak(q.prompt, () => {
                 updateAIStatus("Listening... (Speak Now)");
                 startTimer(q.id);
                 recognition.start();
-
                 recognition.onresult = (event) => {
                     clearInterval(timerCountdown);
                     const text = event.results[0][0].transcript;
-                    if (text.trim() === "") {
-                        handleFailure(q.id);
-                    } else {
+                    if (text.trim() === "") { handleFailure(q.id); } 
+                    else {
                         document.getElementById('timer_' + q.id).style.display = 'none';
                         overlay.style.display = 'none';
                         inputField.value = refineVoiceInput(text, q.id);
@@ -256,12 +272,9 @@ const firebaseConfig = {
                         setTimeout(askNextQuestion, 600);
                     }
                 };
-
                 recognition.onerror = () => { handleFailure(q.id); };
             });
-        } else {
-            autoSubmitByAI();
-        }
+        } else { autoSubmitByAI(); }
     }
 
     function autoSubmitByAI() {
@@ -289,7 +302,6 @@ const firebaseConfig = {
             status: "Pending",
             timestamp: Date.now()
         };
-
         db.ref('complaints/' + cid).set(data).then(() => {
             Swal.fire('Success', 'Complaint ID: ' + cid, 'success').then(() => window.location.reload());
         });
@@ -298,6 +310,11 @@ const firebaseConfig = {
     function speak(text, callback) {
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(text);
+        if (femaleVoice) {
+            msg.voice = femaleVoice;
+        }
+        msg.pitch = 1.2; 
+        msg.rate = 0.9;  
         msg.onend = callback;
         window.speechSynthesis.speak(msg);
     }
