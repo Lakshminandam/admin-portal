@@ -10,6 +10,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
     <style>
         :root { --primary: #003366; --accent: #FFD700; --bg: #f8fafc; }
@@ -29,13 +30,27 @@
         .complaint-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid #dee2e6; margin-top: 20px; }
         .complaint-table td { padding: 12px 20px; border: 1px solid #dee2e6; vertical-align: middle; }
         .label-cell { background-color: #ffffff; font-weight: bold; width: 35%; text-align: right; color: #333; }
-        .input-cell { width: 65%; }
+        .input-cell { width: 65%; position: relative; }
         .form-control { background-color: #ffffff !important; border: 1px solid #ced4da; padding: 8px; width: 100%; }
 
+        .timer-badge {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            background: #e63946; color: white; padding: 2px 10px; border-radius: 20px;
+            font-size: 0.8rem; font-weight: bold; display: none; z-index: 10;
+        }
+
+        #options-overlay {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; border: 3px solid var(--primary); padding: 20px; border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4); z-index: 2000; width: 85%; max-width: 500px;
+        }
+        .option-item { padding: 8px; border-bottom: 1px solid #eee; color: #003366; font-weight: 500; }
+
         .voice-active { border: 2px solid #007bff !important; background-color: #e7f3ff !important; box-shadow: 0 0 10px rgba(0, 123, 255, 0.2); }
-        .ai-status-box { background: #003366; color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: center; }
-        .mic-btn { background: #3f51b5; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 1.5rem; transition: 0.3s; }
+        .ai-status-box { background: #003366; color: white; padding: 20px; border-radius: 8px; margin-bottom: 10px; text-align: center; min-height: 80px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        .ai-text-display { font-size: 1.1rem; font-weight: 500; font-style: italic; color: #FFD700; }
         
+        .mic-btn { background: #3f51b5; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 1.5rem; transition: 0.3s; }
         .btn-submit-row { background-color: #007bff; border: none; padding: 15px; font-weight: bold; color: white; width: 100%; border-radius: 0 0 8px 8px; cursor: pointer; text-transform: uppercase; }
         .btn-submit-row:disabled { background-color: #6c757d; cursor: not-allowed; }
 
@@ -43,6 +58,11 @@
     </style>
 </head>
 <body>
+
+<div id="options-overlay">
+    <h5 class="text-center text-primary mb-3" id="overlay-title"><i class="bi bi-list-task"></i> Options</h5>
+    <div id="options-list-content"></div>
+</div>
 
 <nav class="navbar navbar-expand-lg navbar-dark shadow">
     <div class="container">
@@ -71,19 +91,22 @@
         <div class="row justify-content-center">
             <div class="col-lg-10">
                 <div class="ai-status-box" id="ai_header">
-                    <i class="bi bi-robot me-2"></i> <span id="ai_status">Click the Mic to start automated filing</span>
+                    <div>
+                        <i class="bi bi-robot me-2"></i> 
+                        <span id="ai_status" class="ai-text-display">Click the Mic to start automated filing</span>
+                    </div>
                 </div>
 
                 <table class="complaint-table">
-                    <tr><td class="label-cell">ServiceNumber</td><td class="input-cell"><input type="text" id="field_service" class="form-control" readonly></td></tr>
-                    <tr><td class="label-cell">Name</td><td class="input-cell"><input type="text" id="field_name" class="form-control" readonly></td></tr>
-                    <tr><td class="label-cell">Mobile Number*</td><td class="input-cell"><input type="text" id="field_mobile" class="form-control" readonly maxlength="10"></td></tr>
-                    <tr><td class="label-cell">Circle*</td><td class="input-cell"><input type="text" id="field_circle" class="form-control" readonly placeholder="Vijayawada / Guntur / Prakasam"></td></tr>
-                    <tr><td class="label-cell">Division/Section*</td><td class="input-cell"><input type="text" id="field_division" class="form-control" readonly placeholder="AI will read options..."></td></tr>
-                    <tr><td class="label-cell">Email ID</td><td class="input-cell"><input type="text" id="field_email" class="form-control" readonly></td></tr>
-                    <tr><td class="label-cell">Address*</td><td class="input-cell"><textarea id="field_address" class="form-control" rows="2" readonly></textarea></td></tr>
-                    <tr><td class="label-cell">Complaint Type*</td><td class="input-cell"><input type="text" id="field_type" class="form-control" readonly placeholder="Listening for category..."><small class="text-muted" style="font-size: 0.7rem;">Options: Billing, Line, Pole, SC Wire, Supply Failure, Transformer, Voltage, Incident</small></td></tr>
-                    <tr><td class="label-cell">Complaint*</td><td class="input-cell"><textarea class="form-control" id="field_complaint" rows="4" readonly></textarea></td></tr>
+                    <tr><td class="label-cell">ServiceNumber</td><td class="input-cell"><input type="text" id="field_service" class="form-control" readonly><span class="timer-badge" id="timer_field_service">30s</span></td></tr>
+                    <tr><td class="label-cell">Name</td><td class="input-cell"><input type="text" id="field_name" class="form-control" readonly><span class="timer-badge" id="timer_field_name">30s</span></td></tr>
+                    <tr><td class="label-cell">Mobile Number*</td><td class="input-cell"><input type="text" id="field_mobile" class="form-control" readonly maxlength="10"><span class="timer-badge" id="timer_field_mobile">30s</span></td></tr>
+                    <tr><td class="label-cell">Circle*</td><td class="input-cell"><input type="text" id="field_circle" class="form-control" readonly><span class="timer-badge" id="timer_field_circle">30s</span></td></tr>
+                    <tr><td class="label-cell">Division/Section*</td><td class="input-cell"><input type="text" id="field_division" class="form-control" readonly><span class="timer-badge" id="timer_field_division">30s</span></td></tr>
+                    <tr><td class="label-cell">Email ID</td><td class="input-cell"><input type="text" id="field_email" class="form-control" readonly><span class="timer-badge" id="timer_field_email">30s</span></td></tr>
+                    <tr><td class="label-cell">Address*</td><td class="input-cell"><textarea id="field_address" class="form-control" rows="2" readonly></textarea><span class="timer-badge" id="timer_field_address">30s</span></td></tr>
+                    <tr><td class="label-cell">Complaint Type*</td><td class="input-cell"><input type="text" id="field_type" class="form-control" readonly><span class="timer-badge" id="timer_field_type">30s</span></td></tr>
+                    <tr><td class="label-cell">Complaint*</td><td class="input-cell"><textarea class="form-control" id="field_complaint" rows="4" readonly></textarea><span class="timer-badge" id="timer_field_complaint">30s</span></td></tr>
                 </table>
                 
                 <div class="d-flex flex-column align-items-center mt-4">
@@ -100,75 +123,97 @@
 
     if (typeof firebaseConfig !== 'undefined') { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
+    const auth = firebase.auth();
+
+    function getMobileFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        let phone = urlParams.get('phone'); 
+        if (phone) {
+            document.getElementById('field_mobile').value = phone.replace(/\D/g, '').slice(-10);
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', getMobileFromUrl);
+
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            const userPhone = user.phoneNumber ? user.phoneNumber.replace('+91', '') : "";
+            if(userPhone) {
+                document.getElementById('field_mobile').value = userPhone;
+            }
+        }
+    });
 
     const circleData = {
-        "Vijayawada": ["Gunadala Section", "Nunna Section", "Governorpet or One Town", "Patamata", "Bhavanipuram", "Gannavaram", "Ibrahimpatnam", "Kanchikacherla", "Mylavaram", "Gudivada Division", "Machilipatnam Division", "Vuyyuru Division"],
+        "Vijayawada": ["Gunadala Section", "Nunna Section", "Governorpet", "Patamata", "Bhavanipuram", "Gannavaram", "Ibrahimpatnam", "Kanchikacherla", "Mylavaram", "Gudivada Division", "Machilipatnam Division", "Vuyyuru Division"],
         "Guntur": ["Guntur-1 Old Town", "Guntur-2 New Town", "Tenali", "Mangalagiri", "Chebrolu", "Chilakaluripet", "Vinukonda", "Sattenapalli"],
-        "Prakasam": ["Ongole Town and Rural sections", "Podili", "Kanigiri", "Giddalur", "Yerragondapalem", "Addanki", "Bapatla"]
+        "Prakasam": ["Ongole Town", "Podili", "Kanigiri", "Giddalur", "Yerragondapalem", "Addanki", "Bapatla"]
     };
+
+    const complaintTypes = ["Billing", "Line", "Pole", "SC Wire", "Supply Failure", "Transformer", "Voltage", "Incident"];
 
     const questions = [
         { id: "field_service", prompt: "Tell me your service number." },
         { id: "field_name", prompt: "Tell me your full name." },
-        { id: "field_mobile", prompt: "Tell me your mobile number." },
-        { id: "field_circle", prompt: "Which circle? Say Vijayawada, Guntur, or Prakasam." },
+        { id: "field_mobile", prompt: "Confirm or tell me your mobile number." },
+        { id: "field_circle", prompt: "Which circle? Vijayawada, Guntur, or Prakasam.", options: Object.keys(circleData) },
         { id: "field_division", prompt: "" },
         { id: "field_email", prompt: "Tell me your email address." },
         { id: "field_address", prompt: "What is your address?" },
-        { id: "field_type", prompt: "Choose category: Billing, Line, Pole, SC Wire, Supply Failure, Transformer, Voltage, or Incident." },
+        { id: "field_type", prompt: "Choose category: Billing, Line, Pole, SC Wire, Supply Failure, Transformer, Voltage, or Incident.", options: complaintTypes },
         { id: "field_complaint", prompt: "Describe your electricity complaint in detail." }
     ];
 
     let currentStep = 0;
+    let timerCountdown;
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.lang = 'en-US';
-
-    function checkAndFillMobile() {
-        const urlParams = new URLSearchParams(window.location.search);
-        let mobileFromUrl = urlParams.get('phone'); 
-        if (mobileFromUrl) {
-            mobileFromUrl = mobileFromUrl.replace(/\D/g, '').slice(-10);
-            document.getElementById('field_mobile').value = mobileFromUrl;
-        }
-    }
-
-    window.addEventListener('DOMContentLoaded', checkAndFillMobile);
-
-    function showPage(pageId) {
-        document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
-        document.getElementById(pageId).classList.add('active-page');
-        if(pageId === 'complaint') checkAndFillMobile();
-    }
 
     function capitalizeFirstLetter(string) { return string.charAt(0).toUpperCase() + string.slice(1); }
 
     function refineVoiceInput(text, fieldId) {
         let cleanText = text.trim().toLowerCase();
-        if (fieldId === "field_email") return cleanText.replace(/\s+/g, '').replace(/attherate/g, '@').replace(/dot/g, '.').replace(/underscore/g, '_');
+        if (fieldId === "field_email") return cleanText.replace(/\s+/g, '').replace(/attherate/g, '@').replace(/dot/g, '.');
         if (fieldId === "field_circle") {
             if (cleanText.includes("vija")) return "Vijayawada";
             if (cleanText.includes("gun")) return "Guntur";
-            if (cleanText.includes("prak") || cleanText.includes("ongo")) return "Prakasam";
-        }
-        if (fieldId === "field_division") {
-            const currentCircle = document.getElementById('field_circle').value;
-            const validOptions = circleData[currentCircle];
-            if (!validOptions) return capitalizeFirstLetter(text);
-            const match = validOptions.find(opt => cleanText.includes(opt.toLowerCase().split(' ')[0]));
-            return match ? match : capitalizeFirstLetter(text); 
+            if (cleanText.includes("prak")) return "Prakasam";
         }
         if (fieldId === "field_type") {
-            if (cleanText.includes("bill")) return "Billing Related";
-            if (cleanText.includes("line")) return "Line Related";
-            if (cleanText.includes("pole")) return "Pole Related";
-            if (cleanText.includes("sc wire") || cleanText.includes("wire")) return "SC Wire Related";
-            if (cleanText.includes("supply") || cleanText.includes("fail") || cleanText.includes("power cut")) return "Supply Failure Related";
-            if (cleanText.includes("transformer")) return "Transformer Related";
-            if (cleanText.includes("voltage")) return "Voltage Related";
-            if (cleanText.includes("incident") || cleanText.includes("accident")) return "Incident";
+            const found = complaintTypes.find(t => cleanText.includes(t.toLowerCase()));
+            return found ? found : capitalizeFirstLetter(text);
         }
         if (fieldId === "field_mobile") return cleanText.replace(/\D/g, '').slice(-10);
         return capitalizeFirstLetter(text);
+    }
+
+    function updateAIStatus(text) {
+        document.getElementById('ai_status').innerText = text;
+    }
+
+    function handleFailure(fieldId) {
+        clearInterval(timerCountdown);
+        recognition.stop();
+        document.getElementById('timer_' + fieldId).style.display = 'none';
+        
+        const retryMsg = "I didn't catch that. Let's try again.";
+        updateAIStatus(retryMsg);
+        speak(retryMsg, () => {
+            askNextQuestion();
+        });
+    }
+
+    function startTimer(fieldId) {
+        const badge = document.getElementById('timer_' + fieldId);
+        badge.style.display = 'block';
+        let timeLeft = 30;
+        badge.innerText = timeLeft + "s";
+        clearInterval(timerCountdown);
+        timerCountdown = setInterval(() => {
+            timeLeft--;
+            badge.innerText = timeLeft + "s";
+            if (timeLeft <= 0) { handleFailure(fieldId); }
+        }, 1000);
     }
 
     function startVoiceAI() {
@@ -182,33 +227,56 @@
             const q = questions[currentStep];
             const inputField = document.getElementById(q.id);
 
-            // AUTO-SKIP IF PRE-FILLED (Specifically for Mobile)
-            if (q.id === "field_mobile" && inputField.value.length >= 10) {
+            if (q.id === "field_mobile" && inputField.value !== "") {
                 currentStep++;
                 askNextQuestion();
                 return;
             }
 
+            const overlay = document.getElementById('options-overlay');
+            const listContent = document.getElementById('options-list-content');
+            const title = document.getElementById('overlay-title');
+
             if (q.id === "field_division") {
-                const selectedCircle = document.getElementById('field_circle').value;
-                const options = circleData[selectedCircle] || [];
-                q.prompt = `Under ${selectedCircle} Circle, please select one of the following sections: ${options.join(", ")}.`;
+                const circle = document.getElementById('field_circle').value;
+                const options = circleData[circle] || [];
+                q.prompt = `Under ${circle} Circle, select one section: ${options.join(", ")}.`;
+                title.innerText = "Select Section";
+                listContent.innerHTML = options.map(opt => `<div class="option-item">${opt}</div>`).join('');
+                overlay.style.display = 'block';
+            } 
+            else if (q.options) {
+                title.innerText = q.id === "field_circle" ? "Select Circle" : "Select Complaint Type";
+                listContent.innerHTML = q.options.map(opt => `<div class="option-item">${opt}</div>`).join('');
+                overlay.style.display = 'block';
+            } else {
+                overlay.style.display = 'none';
             }
 
             inputField.classList.add('voice-active');
-            document.getElementById('ai_status').innerText = "AI asking: " + (q.id === "field_division" ? "Reading options..." : q.prompt);
+            updateAIStatus(q.prompt);
             
             speak(q.prompt, () => {
+                updateAIStatus("Listening... (Speak Now)");
+                startTimer(q.id);
                 recognition.start();
+
                 recognition.onresult = (event) => {
-                    let text = event.results[0][0].transcript;
-                    text = refineVoiceInput(text, q.id);
-                    inputField.value = text;
-                    inputField.classList.remove('voice-active');
-                    currentStep++;
-                    setTimeout(askNextQuestion, 600);
+                    clearInterval(timerCountdown);
+                    const text = event.results[0][0].transcript;
+                    if (text.trim() === "") {
+                        handleFailure(q.id);
+                    } else {
+                        document.getElementById('timer_' + q.id).style.display = 'none';
+                        overlay.style.display = 'none';
+                        inputField.value = refineVoiceInput(text, q.id);
+                        inputField.classList.remove('voice-active');
+                        currentStep++;
+                        setTimeout(askNextQuestion, 600);
+                    }
                 };
-                recognition.onerror = () => { recognition.stop(); setTimeout(askNextQuestion, 1000); };
+
+                recognition.onerror = () => { handleFailure(q.id); };
             });
         } else {
             autoSubmitByAI();
@@ -216,39 +284,18 @@
     }
 
     function autoSubmitByAI() {
-        const finishMsg = "Thank you. All details have been collected. Submitting your complaint now.";
-        document.getElementById('ai_status').innerText = finishMsg;
+        const finishMsg = "All details collected. Submitting now.";
+        updateAIStatus(finishMsg);
         document.getElementById('submitBtn').disabled = false;
         speak(finishMsg, () => setTimeout(submitFinalForm, 1000));
     }
 
-    function _generateComplaintId() {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ123456789';
-        let randomStr = '';
-        for (let i = 0; i < 5; i++) randomStr += chars.charAt(Math.floor(Math.random() * chars.length));
-        return "CP" + randomStr;
-    }
+    function generateId() { return "CP" + Math.random().toString(36).substr(2, 5).toUpperCase(); }
 
-    async function submitFinalForm() {
-        const complaintID = _generateComplaintId();
-        const descriptionText = document.getElementById('field_complaint').value;
-        let detectedPriority = "Medium"; 
-        document.getElementById('ai_status').innerText = "Analyzing Priority with AI...";
-
-        try {
-            const response = await fetch('http://localhost:5000/predict_priority', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ complaint: descriptionText })
-            });
-            if (response.ok) {
-                const aiResult = await response.json();
-                detectedPriority = aiResult.priority;
-            }
-        } catch (e) { console.log("AI Server error"); }
-        
-        const complaintData = {
-            complaintId: complaintID,
+    function submitFinalForm() {
+        const cid = generateId();
+        const data = {
+            complaintId: cid,
             serviceNumber: document.getElementById('field_service').value,
             name: document.getElementById('field_name').value,
             mobile: document.getElementById('field_mobile').value,
@@ -257,40 +304,36 @@
             email: document.getElementById('field_email').value,
             address: document.getElementById('field_address').value,
             complaintType: document.getElementById('field_type').value,
-            description: descriptionText,
-            priority: detectedPriority, 
-            department: "Electricity",
+            description: document.getElementById('field_complaint').value,
             status: "Pending",
             timestamp: Date.now()
         };
 
-        db.ref('complaints/' + complaintID).set(complaintData)
-        .then(() => {
-            Swal.fire({
-                title: 'Registration Successful!',
-                html: `<div style="text-align: center;"><p>ID: <strong>${complaintID}</strong></p></div>`,
-                icon: 'success',
-                confirmButtonText: 'GO TO HOME'
-            }).then(() => window.location.reload());
-        }).catch((error) => Swal.fire('Error', error.message, 'error'));
+        db.ref('complaints/' + cid).set(data).then(() => {
+            Swal.fire('Success', 'Complaint ID: ' + cid, 'success').then(() => window.location.reload());
+        });
     }
 
     function speak(text, callback) {
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(text);
-        let voices = window.speechSynthesis.getVoices();
-        let selectedVoice = voices.find(voice => 
-            voice.name.includes('Female') || 
-            voice.name.includes('Google US English') || 
-            voice.name.includes('Microsoft Zira')
+        const voices = window.speechSynthesis.getVoices();
+        const femaleVoice = voices.find(v => 
+            v.name.includes('Zira') || 
+            v.name.includes('Female') || 
+            (v.name.includes('Google') && v.name.includes('UK English'))
         );
-        if (selectedVoice) msg.voice = selectedVoice;
-        msg.rate = 0.9;
+        if (femaleVoice) msg.voice = femaleVoice;
         msg.onend = callback;
         window.speechSynthesis.speak(msg);
     }
 
-    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+
+    function showPage(pageId) {
+        document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
+        document.getElementById(pageId).classList.add('active-page');
+    }
 </script>
 </body>
 </html>
