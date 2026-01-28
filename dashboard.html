@@ -73,16 +73,17 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
-                                <th class="ps-4">ID</th>
+                                <th class="ps-4">Service Number</th>
                                 <th>Citizen Name</th>
-                                <th>Mobile</th>
-                                <th>District</th>
+                                <th>Circle</th>
+                                <th>Section</th>
+                                <th>Type</th>
                                 <th>Priority</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
                         <tbody id="complaintsTable">
-                            <tr><td colspan="6" class="text-center py-4 text-muted">Loading grievances...</td></tr>
+                            <tr><td colspan="7" class="text-center py-4 text-muted">Loading grievances...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -129,6 +130,7 @@ const firebaseConfig = {
     appId: "1:138166783170:web:ae54b798e700d4a03e7f5b",
     measurementId: "G-K9KERE9NMT"
   };
+
     let auth, db, activeKey = null;
     const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
 
@@ -166,7 +168,6 @@ const firebaseConfig = {
                 const data = child.val();
                 const key = child.key;
                 const status = (data.status || 'pending').toLowerCase();
-                
                 const p = (data.priority || 'Medium').toUpperCase();
                 
                 let bClass = 'bg-pending';
@@ -179,10 +180,11 @@ const firebaseConfig = {
 
                 tableBody.innerHTML += `
                     <tr onclick="viewDetail('${key}')" style="cursor: pointer;">
-                        <td class="ps-4 fw-bold text-primary">${data.complaintId || key}</td>
+                        <td class="ps-4 fw-bold text-primary">${data.serviceNumber || 'N/A'}</td>
                         <td><div class="fw-bold">${data.name || 'N/A'}</div></td>
-                        <td>${data.mobile || 'N/A'}</td>
-                        <td>${data.district || 'N/A'}</td>
+                        <td>${data.circle || 'N/A'}</td>
+                        <td>${data.section || 'N/A'}</td>
+                        <td><small>${data.complaintType || 'N/A'}</small></td>
                         <td><span class="priority-tag" style="background: ${pColor}15; color: ${pColor}; border: 1px solid ${pColor}">${p}</span></td>
                         <td><span class="status-badge ${bClass}">${status}</span></td>
                     </tr>`;
@@ -202,7 +204,7 @@ const firebaseConfig = {
             const status = (d.status || 'pending').toLowerCase();
             const isReopened = (status === 'reopened' || status === 're-opened');
             
-            document.getElementById('modalTitle').innerText = "Complaint ID: " + (d.complaintId || key);
+            document.getElementById('modalTitle').innerText = "Service No: " + (d.serviceNumber || "N/A");
             
             const defaultSentence = "Officer has acknowledged and started work on this grievance.";
             document.getElementById('officerRemarks').value = d.officer_remarks || defaultSentence;
@@ -217,6 +219,7 @@ const firebaseConfig = {
                 ${d.work_started_at ? `<div class="detail-item"><i class="bi bi-play-circle-fill"></i><span><strong>Work Started:</strong> ${formatTime(d.work_started_at)}</span></div>` : ''}
                 ${d.resolved_at ? `<div class="detail-item"><i class="bi bi-check-circle-fill"></i><span><strong>Resolved:</strong> ${formatTime(d.resolved_at)}</span></div>` : ''}
                 <div class="detail-item"><i class="bi bi-telephone"></i><span><strong>Citizen Contact:</strong> ${d.mobile || 'N/A'}</span></div>
+                <div class="detail-item"><i class="bi bi-lightning-fill"></i><span><strong>Circle/Section:</strong> ${d.circle || 'N/A'} / ${d.section || 'N/A'}</span></div>
                 <div class="detail-item"><i class="bi bi-exclamation-triangle-fill"></i><span><strong>AI Detected Priority:</strong> <span class="badge" style="background-color: ${d.priority === 'High' ? '#dc3545' : '#6c757d'}">${d.priority || 'Medium'}</span></span></div>
                 <div class="description-box"><strong>Description:</strong><br>${d.description || "N/A"}</div>
             `;
