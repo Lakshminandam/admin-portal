@@ -26,32 +26,55 @@
             color: white; padding: 120px 0; border-radius: 0 0 50px 50px;
         }
 
-        .form-card { 
-            background: white; border-radius: 12px; padding: 35px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 5px solid var(--primary);
+        .complaint-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border: 1px solid #dee2e6;
+            margin-top: 20px;
         }
-        .form-control { background-color: #f8fafc !important; border: 1px solid #ced4da; padding: 12px; }
+        .complaint-table td {
+            padding: 12px 20px;
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+        .label-cell {
+            background-color: #ffffff;
+            font-weight: bold;
+            width: 35%;
+            text-align: right;
+            color: #333;
+        }
+        .input-cell { width: 65%; }
         
-        .form-control[readonly] {
-            background-color: #eef2f7 !important;
-            border-left: 4px solid var(--primary);
-            cursor: not-allowed;
+        .form-control { 
+            background-color: #ffffff !important; 
+            border: 1px solid #ced4da; 
+            padding: 8px; 
+            width: 100%;
         }
 
         .voice-active { 
-            border: 2px solid #3f51b5 !important; 
-            background-color: #fffde7 !important; 
-            box-shadow: 0 0 15px rgba(63, 81, 181, 0.3);
+            border: 2px solid #007bff !important; 
+            background-color: #e7f3ff !important; 
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.2);
         }
 
-        .ai-status-box { background: #003366; color: white; padding: 15px; border-radius: 88px; margin-bottom: 25px; text-align: center; }
+        .ai-status-box { background: #003366; color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: center; }
         .mic-btn { background: #3f51b5; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 1.5rem; transition: 0.3s; }
         
-        .btn-submit { background-color: #28a745; border: none; padding: 12px 40px; font-weight: bold; color: white; border-radius: 8px; transition: 0.3s; }
-        .btn-submit:disabled { background-color: #6c757d; opacity: 0.6; }
-
-        .swal2-popup { border-radius: 20px !important; }
-        .swal2-styled.swal2-confirm { background-color: #003366 !important; padding: 12px 30px; }
+        .btn-submit-row {
+            background-color: #007bff;
+            border: none;
+            padding: 15px;
+            font-weight: bold;
+            color: white;
+            width: 100%;
+            border-radius: 0 0 8px 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        .btn-submit-row:disabled { background-color: #6c757d; cursor: not-allowed; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -84,32 +107,51 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-10">
-                <div class="form-card">
-                    <div class="ai-status-box" id="ai_header">
-                        <i class="bi bi-robot me-2"></i> <span id="ai_status">Click the Mic to start automated filing</span>
-                    </div>
+                <div class="ai-status-box" id="ai_header">
+                    <i class="bi bi-robot me-2"></i> <span id="ai_status">Click the Mic to start automated filing</span>
+                </div>
 
-                    <div class="row g-3">
-                        <div class="col-md-6"><label class="fw-bold small">Name</label><input type="text" id="field_name" class="form-control" readonly></div>
-                        <div class="col-md-3"><label class="fw-bold small">Age</label><input type="text" id="field_age" class="form-control" readonly></div>
-                        <div class="col-md-3"><label class="fw-bold small">Gender</label><input type="text" id="field_gender" class="form-control" readonly></div>
-                        <div class="col-md-3"><label class="fw-bold small">Mobile No</label><input type="text" id="field_mobile" class="form-control" readonly maxlength="10"></div>
-                        <div class="col-md-6"><label class="fw-bold small">Address</label><input type="text" id="field_address" class="form-control" readonly></div>
-                        <div class="col-md-3"><label class="fw-bold small">Pincode</label><input type="text" id="field_pincode" class="form-control" readonly maxlength="6"></div>
-                        <div class="col-md-4"><label class="fw-bold small">District</label><input type="text" id="field_district" class="form-control" readonly></div>
-                        <div class="col-md-4"><label class="fw-bold small">Mandal</label><input type="text" id="field_mandal" class="form-control" readonly></div>
-                        <div class="col-md-4"><label class="fw-bold small">State</label><input type="text" id="field_state" class="form-control" readonly></div>
-                        <div class="col-12 mt-4"><label class="fw-bold small">Complaint Description</label><textarea class="form-control" id="field_complaint" rows="4" readonly></textarea></div>
-                    </div>
-                    
-                    <div class="d-flex flex-column align-items-center mt-5">
-                        <button class="mic-btn shadow mb-3" onclick="startVoiceAI()" id="voiceBtn">
-                            <i class="bi bi-mic-fill"></i>
-                        </button>
-                        <button class="btn-submit shadow" id="submitBtn" onclick="submitFinalForm()" disabled>
-                            SUBMIT
-                        </button>
-                    </div>
+                <table class="complaint-table">
+                    <tr>
+                        <td class="label-cell">ServiceNumber</td>
+                        <td class="input-cell"><input type="text" id="field_service" class="form-control" readonly></td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Name</td>
+                        <td class="input-cell"><input type="text" id="field_name" class="form-control" readonly></td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Mobile Number*</td>
+                        <td class="input-cell"><input type="text" id="field_mobile" class="form-control" readonly maxlength="10"></td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Email ID</td>
+                        <td class="input-cell"><input type="text" id="field_email" class="form-control" readonly></td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Address*</td>
+                        <td class="input-cell"><textarea id="field_address" class="form-control" rows="2" readonly></textarea></td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Complaint Type*</td>
+                        <td class="input-cell">
+                            <input type="text" id="field_type" class="form-control" readonly placeholder="Listening for category...">
+                            <small class="text-muted" style="font-size: 0.7rem;">Options: Billing, Line, Pole, SC Wire, Supply Failure, Transformer, Voltage, Incident</small>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Complaint*</td>
+                        <td class="input-cell"><textarea class="form-control" id="field_complaint" rows="4" readonly></textarea></td>
+                    </tr>
+                </table>
+                
+                <div class="d-flex flex-column align-items-center mt-4">
+                    <button class="mic-btn shadow mb-3" onclick="startVoiceAI()" id="voiceBtn">
+                        <i class="bi bi-mic-fill"></i>
+                    </button>
+                    <button class="btn-submit-row shadow" id="submitBtn" onclick="submitFinalForm()" disabled>
+                        SUBMIT
+                    </button>
                 </div>
             </div>
         </div>
@@ -127,22 +169,20 @@ const firebaseConfig = {
     appId: "1:138166783170:web:ae54b798e700d4a03e7f5b",
     measurementId: "G-K9KERE9NMT"
   };
+
     if (typeof firebaseConfig !== 'undefined') {
         firebase.initializeApp(firebaseConfig);
     }
     const db = firebase.database();
 
     const questions = [
+        { id: "field_service", prompt: "Tell me your service number." },
         { id: "field_name", prompt: "Tell me your full name." },
-        { id: "field_age", prompt: "How old are you?" },
-        { id: "field_gender", prompt: "What is your gender?" },
         { id: "field_mobile", prompt: "Tell me your mobile number." },
+        { id: "field_email", prompt: "Tell me your email address." },
         { id: "field_address", prompt: "What is your address?" },
-        { id: "field_pincode", prompt: "What is your area pincode?" },
-        { id: "field_district", prompt: "Which district do you live in?" },
-        { id: "field_mandal", prompt: "What is your mandal?" },
-        { id: "field_state", prompt: "Which state are you from?" },
-        { id: "field_complaint", prompt: "Describe your electricity complaint." }
+        { id: "field_type", prompt: "Choose a category: Billing, Line, Pole, SC Wire, Supply Failure, Transformer, Voltage, or Incident." },
+        { id: "field_complaint", prompt: "Describe your electricity complaint in detail." }
     ];
 
     let currentStep = 0;
@@ -155,14 +195,19 @@ const firebaseConfig = {
 
     function refineVoiceInput(text, fieldId) {
         let cleanText = text.trim().toLowerCase();
-        if (fieldId === "field_gender") {
-            if (cleanText.includes("mail") || cleanText === "male") return "Male";
-            if (cleanText.includes("female") || cleanText.includes("shemail")) return "Female";
-            if (cleanText.includes("other") || cleanText.includes("trans")) return "Other";
+        
+        if (fieldId === "field_type") {
+            if (cleanText.includes("bill")) return "Billing Related";
+            if (cleanText.includes("line")) return "Line Related";
+            if (cleanText.includes("pole")) return "Pole Related";
+            if (cleanText.includes("sc wire") || cleanText.includes("wire")) return "SC Wire Related";
+            if (cleanText.includes("supply") || cleanText.includes("fail") || cleanText.includes("power cut")) return "Supply Failure Related";
+            if (cleanText.includes("transformer")) return "Transformer Related";
+            if (cleanText.includes("voltage")) return "Voltage Related";
+            if (cleanText.includes("incident") || cleanText.includes("accident")) return "Incident";
         }
-        if (fieldId === "field_pincode") return cleanText.replace(/\D/g, '').slice(-6);
+
         if (fieldId === "field_mobile") return cleanText.replace(/\D/g, '').slice(-10);
-        if (fieldId === "field_age") return cleanText.replace(/\D/g, '');
         return capitalizeFirstLetter(text);
     }
 
@@ -257,15 +302,12 @@ const firebaseConfig = {
         
         const complaintData = {
             complaintId: complaintID,
+            serviceNumber: document.getElementById('field_service').value,
             name: document.getElementById('field_name').value,
-            age: document.getElementById('field_age').value,
-            gender: document.getElementById('field_gender').value,
             mobile: document.getElementById('field_mobile').value,
+            email: document.getElementById('field_email').value,
             address: document.getElementById('field_address').value,
-            pincode: document.getElementById('field_pincode').value,
-            district: document.getElementById('field_district').value,
-            mandal: document.getElementById('field_mandal').value,
-            state: document.getElementById('field_state').value,
+            complaintType: document.getElementById('field_type').value,
             description: descriptionText,
             priority: detectedPriority, 
             department: "Electricity",
@@ -290,9 +332,7 @@ const firebaseConfig = {
     function speak(text, callback) {
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(text);
-        
         let voices = window.speechSynthesis.getVoices();
-        
         let selectedVoice = voices.find(voice => 
             voice.name.includes('Female') || 
             voice.name.includes('Google US English') || 
@@ -300,11 +340,7 @@ const firebaseConfig = {
             voice.name.includes('Zira') ||
             voice.name.includes('Microsoft Zira')
         );
-
-        if (selectedVoice) {
-            msg.voice = selectedVoice;
-        }
-
+        if (selectedVoice) msg.voice = selectedVoice;
         msg.rate = 1.0;  
         msg.pitch = 1.1; 
         msg.onend = callback;
