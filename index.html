@@ -125,6 +125,14 @@
                         <td class="input-cell"><input type="text" id="field_mobile" class="form-control" readonly maxlength="10"></td>
                     </tr>
                     <tr>
+                        <td class="label-cell">Circle*</td>
+                        <td class="input-cell"><input type="text" id="field_circle" class="form-control" readonly placeholder="Vijayawada / Guntur / Prakasam"></td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Division/Section*</td>
+                        <td class="input-cell"><input type="text" id="field_division" class="form-control" readonly placeholder="AI will read options..."></td>
+                    </tr>
+                    <tr>
                         <td class="label-cell">Email ID</td>
                         <td class="input-cell"><input type="text" id="field_email" class="form-control" readonly></td>
                     </tr>
@@ -166,10 +174,18 @@
     }
     const db = firebase.database();
 
+    const circleData = {
+        "Vijayawada": ["Gunadala Section", "Nunna Section", "Governorpet or One Town", "Patamata", "Bhavanipuram", "Gannavaram", "Ibrahimpatnam", "Kanchikacherla", "Mylavaram", "Gudivada Division", "Machilipatnam Division", "Vuyyuru Division"],
+        "Guntur": ["Guntur-1 Old Town", "Guntur-2 New Town", "Tenali", "Mangalagiri", "Chebrolu", "Chilakaluripet", "Vinukonda", "Sattenapalli"],
+        "Prakasam": ["Ongole Town and Rural sections", "Podili", "Kanigiri", "Giddalur", "Yerragondapalem", "Addanki", "Bapatla"]
+    };
+
     const questions = [
         { id: "field_service", prompt: "Tell me your service number." },
         { id: "field_name", prompt: "Tell me your full name." },
         { id: "field_mobile", prompt: "Tell me your mobile number." },
+        { id: "field_circle", prompt: "Which circle do you belong to? Say Vijayawada, Guntur, or Prakasam." },
+        { id: "field_division", prompt: "" }, 
         { id: "field_email", prompt: "Tell me your email address." },
         { id: "field_address", prompt: "What is your address?" },
         { id: "field_type", prompt: "Choose a category: Billing, Line, Pole, SC Wire, Supply Failure, Transformer, Voltage, or Incident." },
@@ -187,6 +203,20 @@
     function refineVoiceInput(text, fieldId) {
         let cleanText = text.trim().toLowerCase();
         
+        if (fieldId === "field_circle") {
+            if (cleanText.includes("vija")) return "Vijayawada";
+            if (cleanText.includes("gun")) return "Guntur";
+            if (cleanText.includes("prak") || cleanText.includes("ongo")) return "Prakasam";
+        }
+
+        if (fieldId === "field_division") {
+            const currentCircle = document.getElementById('field_circle').value;
+            const validOptions = circleData[currentCircle];
+            if (!validOptions) return capitalizeFirstLetter(text);
+            const match = validOptions.find(opt => cleanText.includes(opt.toLowerCase().split(' ')[0]));
+            return match ? match : capitalizeFirstLetter(text); 
+        }
+
         if (fieldId === "field_type") {
             if (cleanText.includes("bill")) return "Billing Related";
             if (cleanText.includes("line")) return "Line Related";
@@ -230,6 +260,12 @@
             const q = questions[currentStep];
             const inputField = document.getElementById(q.id);
 
+            if (q.id === "field_division") {
+                const selectedCircle = document.getElementById('field_circle').value;
+                const options = circleData[selectedCircle] || [];
+                q.prompt = `Under ${selectedCircle} Circle, please select one of the following sections: ${options.join(", ")}.`;
+            }
+
             if (q.id === "field_mobile" && inputField.value.length >= 10) {
                 currentStep++;
                 askNextQuestion();
@@ -237,7 +273,7 @@
             }
 
             inputField.classList.add('voice-active');
-            document.getElementById('ai_status').innerText = "AI asking: " + q.prompt;
+            document.getElementById('ai_status').innerText = "AI asking: " + (q.id === "field_division" ? "Reading options..." : q.prompt);
             
             speak(q.prompt, () => {
                 recognition.start();
@@ -296,6 +332,8 @@
             serviceNumber: document.getElementById('field_service').value,
             name: document.getElementById('field_name').value,
             mobile: document.getElementById('field_mobile').value,
+            circle: document.getElementById('field_circle').value,
+            division: document.getElementById('field_division').value,
             email: document.getElementById('field_email').value,
             address: document.getElementById('field_address').value,
             complaintType: document.getElementById('field_type').value,
@@ -310,7 +348,7 @@
         .then(() => {
             Swal.fire({
                 title: 'Registration Successful!',
-                html: `<div style="text-align: center;"><p>Your complaint has been successfully registered.</p><div style="background: #f0f4f8; padding: 15px; border-radius: 10px; border: 2px solid #003366; margin: 15px 0;"><span style="font-size: 0.8rem; color: #666;">COMPLAINT ID</span><br><strong style="font-size: 1.4rem; color: #003366;">${complaintID}</strong></div></div>`,
+                html: `<div style="text-align: center;"><p>ID: <strong>${complaintID}</strong></p></div>`,
                 icon: 'success',
                 confirmButtonText: 'GO TO HOME'
             }).then(() => {
@@ -327,12 +365,10 @@
         let selectedVoice = voices.find(voice => 
             voice.name.includes('Female') || 
             voice.name.includes('Google US English') || 
-            voice.name.includes('Samantha') ||
-            voice.name.includes('Zira') ||
             voice.name.includes('Microsoft Zira')
         );
         if (selectedVoice) msg.voice = selectedVoice;
-        msg.rate = 1.0;  
+        msg.rate = 0.9;  
         msg.pitch = 1.1; 
         msg.onend = callback;
         window.speechSynthesis.speak(msg);
