@@ -21,7 +21,7 @@
         .stat-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-bottom: 4px solid var(--primary); }
         .data-card { background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
         .table thead { background: #f8fafc; color: #64748b; font-size: 0.8rem; text-transform: uppercase; }
-        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: white; text-transform: uppercase; display: inline-block; min-width: 90px; text-align: center; }
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: white; text-transform: uppercase; }
         
         .bg-pending { background-color: #d32f2f; }
         .bg-inprogress { background-color: #ef6c00; }
@@ -35,22 +35,11 @@
         
         .reopen-box { background: #fff5f5; padding: 12px; border: 1px solid #feb2b2; border-left: 4px solid #f56565; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; }
         
-        .priority-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; text-wrap: nowrap; }
+        .priority-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
 
         .btn-start { background-color: #ef6c00; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
         .btn-resolve { background-color: #2e7d32; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
         
-        /* Optimized column widths */
-        .col-id { width: 8%; }
-        .col-name { width: 15%; }
-        .col-mobile { width: 12%; }
-        .col-service { width: 12%; }
-        .col-circle { width: 10%; }
-        .col-section { width: 10%; }
-        .col-type { width: 13%; }
-        .col-priority { width: 10%; }
-        .col-status { width: 10%; }
-
         @media (max-width: 768px) { .sidebar { position: relative; min-height: auto; } .main-content { margin-left: 0; } }
     </style>
 </head>
@@ -84,19 +73,16 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
-                                <th class="ps-4 col-id">ID</th>
-                                <th class="col-name">Citizen Name</th>
-                                <th class="col-mobile">Mobile</th>
-                                <th class="col-service">Service No</th>
-                                <th class="col-circle">Circle</th>
-                                <th class="col-section">Section</th>
-                                <th class="col-type">Type</th>
-                                <th class="col-priority">Priority</th>
-                                <th class="col-status">Status</th>
+                                <th class="ps-4">ID</th>
+                                <th>Citizen Name</th>
+                                <th>Mobile</th>
+                                <th>District</th>
+                                <th>Priority</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody id="complaintsTable">
-                            <tr><td colspan="9" class="text-center py-4 text-muted">Loading grievances...</td></tr>
+                            <tr><td colspan="6" class="text-center py-4 text-muted">Loading grievances...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -171,6 +157,7 @@
                 const data = child.val();
                 const key = child.key;
                 const status = (data.status || 'pending').toLowerCase();
+                
                 const p = (data.priority || 'Medium').toUpperCase();
                 
                 let bClass = 'bg-pending';
@@ -183,13 +170,10 @@
 
                 tableBody.innerHTML += `
                     <tr onclick="viewDetail('${key}')" style="cursor: pointer;">
-                        <td class="ps-4 fw-bold text-primary text-nowrap">${data.complaintId || key.substring(0,6)}</td>
-                        <td class="text-nowrap">${data.name || 'N/A'}</td>
-                        <td class="text-nowrap">${data.mobile || 'N/A'}</td>
-                        <td class="text-nowrap">${data.serviceNumber || 'N/A'}</td>
-                        <td>${data.circle || 'N/A'}</td>
-                        <td>${data.section || 'N/A'}</td>
-                        <td><small class="text-muted">${data.complaintType || 'N/A'}</small></td>
+                        <td class="ps-4 fw-bold text-primary">${data.complaintId || key}</td>
+                        <td><div class="fw-bold">${data.name || 'N/A'}</div></td>
+                        <td>${data.mobile || 'N/A'}</td>
+                        <td>${data.district || 'N/A'}</td>
                         <td><span class="priority-tag" style="background: ${pColor}15; color: ${pColor}; border: 1px solid ${pColor}">${p}</span></td>
                         <td><span class="status-badge ${bClass}">${status}</span></td>
                     </tr>`;
@@ -209,31 +193,23 @@
             const status = (d.status || 'pending').toLowerCase();
             const isReopened = (status === 'reopened' || status === 're-opened');
             
-            document.getElementById('modalTitle').innerText = "Details for ID: " + (d.complaintId || key);
+            document.getElementById('modalTitle').innerText = "Complaint ID: " + (d.complaintId || key);
             
             const defaultSentence = "Officer has acknowledged and started work on this grievance.";
             document.getElementById('officerRemarks').value = d.officer_remarks || defaultSentence;
+            
             document.getElementById('officerRemarks').disabled = false; 
 
             document.getElementById('startWorkBtn').style.display = (status === 'pending' || isReopened) ? 'block' : 'none';
             document.getElementById('resolveBtn').style.display = (status !== 'resolved') ? 'block' : 'none';
 
             let html = `
-                <div class="row">
-                    <div class="col-md-6 border-end">
-                        <div class="detail-item"><i class="bi bi-person-fill"></i><span><strong>Citizen:</strong> ${d.name || 'N/A'}</span></div>
-                        <div class="detail-item"><i class="bi bi-telephone-fill"></i><span><strong>Mobile:</strong> ${d.mobile || 'N/A'}</span></div>
-                        <div class="detail-item"><i class="bi bi-lightning-charge-fill"></i><span><strong>Service No:</strong> ${d.serviceNumber || 'N/A'}</span></div>
-                    </div>
-                    <div class="col-md-6 ps-md-4">
-                        <div class="detail-item"><i class="bi bi-geo-alt-fill"></i><span><strong>Circle/Section:</strong> ${d.circle || 'N/A'} / ${d.section || 'N/A'}</span></div>
-                        <div class="detail-item"><i class="bi bi-calendar-check"></i><span><strong>Registered:</strong> ${formatTime(d.createdAt || d.timestamp)}</span></div>
-                        <div class="detail-item"><i class="bi bi-tag-fill"></i><span><strong>Type:</strong> ${d.complaintType || 'N/A'}</span></div>
-                    </div>
-                </div>
-                <hr>
-                <div class="detail-item"><i class="bi bi-exclamation-triangle-fill"></i><span><strong>Priority:</strong> <span class="badge" style="background-color: ${d.priority === 'High' ? '#dc3545' : '#6c757d'}">${d.priority || 'Medium'}</span></span></div>
-                <div class="description-box"><strong>Grievance Description:</strong><br>${d.description || "N/A"}</div>
+                <div class="detail-item"><i class="bi bi-calendar-event"></i><span><strong>Registered:</strong> ${formatTime(d.createdAt || d.timestamp)}</span></div>
+                ${d.work_started_at ? `<div class="detail-item"><i class="bi bi-play-circle-fill"></i><span><strong>Work Started:</strong> ${formatTime(d.work_started_at)}</span></div>` : ''}
+                ${d.resolved_at ? `<div class="detail-item"><i class="bi bi-check-circle-fill"></i><span><strong>Resolved:</strong> ${formatTime(d.resolved_at)}</span></div>` : ''}
+                <div class="detail-item"><i class="bi bi-telephone"></i><span><strong>Citizen Contact:</strong> ${d.mobile || 'N/A'}</span></div>
+                <div class="detail-item"><i class="bi bi-exclamation-triangle-fill"></i><span><strong>AI Detected Priority:</strong> <span class="badge" style="background-color: ${d.priority === 'High' ? '#dc3545' : '#6c757d'}">${d.priority || 'Medium'}</span></span></div>
+                <div class="description-box"><strong>Description:</strong><br>${d.description || "N/A"}</div>
             `;
 
             if (isReopened && d.reopen_reason) {
@@ -247,14 +223,25 @@
 
     function updateStatus(newStatus) {
         const remarks = document.getElementById('officerRemarks').value.trim();
+        
         if (newStatus === 'resolved' && remarks === "") {
             alert("Please provide resolution remarks before resolving.");
             return;
         }
-        let updates = { status: newStatus, officer_remarks: remarks };
+
+        let updates = {
+            status: newStatus,
+            officer_remarks: remarks
+        };
+
         if (newStatus === 'in progress') updates['work_started_at'] = firebase.database.ServerValue.TIMESTAMP;
         if (newStatus === 'resolved') updates['resolved_at'] = firebase.database.ServerValue.TIMESTAMP;
-        db.ref('complaints/' + activeKey).update(updates).then(() => { detailsModal.hide(); }).catch((error) => { alert("Error updating status: " + error.message); });
+
+        db.ref('complaints/' + activeKey).update(updates).then(() => {
+            detailsModal.hide();
+        }).catch((error) => {
+            alert("Error updating status: " + error.message);
+        });
     }
 
     function logout() { auth.signOut().then(() => { window.location.href = 'index.html'; }); }
