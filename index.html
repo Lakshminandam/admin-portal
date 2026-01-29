@@ -46,6 +46,7 @@
             transition: background 0.3s ease;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
+        .btn-submit-full:hover:not(:disabled) { background-color: #0056b3; }
         .btn-submit-full:disabled { background-color: #a0cfff; cursor: not-allowed; opacity: 0.8; }
 
         .timer-badge {
@@ -205,10 +206,14 @@ const firebaseConfig = {
     function getBestMatch(input, options) {
         let bestMatch = input;
         const cleanInput = input.toLowerCase().replace(/\s/g, '');
-        options.forEach(opt => {
-            const cleanOpt = opt.toLowerCase().replace(/\s/g, '');
-            if (cleanOpt.includes(cleanInput) || cleanInput.includes(cleanOpt)) bestMatch = opt;
-        });
+        
+        for (let opt of options) {
+            const cleanOpt = opt.toLowerCase().replace(/\s/g, '').replace('section', '').replace('division', '');
+            
+            if (cleanOpt.includes(cleanInput) || cleanInput.includes(cleanOpt)) {
+                return opt;
+            }
+        }
         return bestMatch;
     }
 
@@ -302,7 +307,9 @@ const firebaseConfig = {
                 };
             });
         } else {
-            document.getElementById('ai_status').innerText = "All details collected. Submitting your complaint now.";
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('ai_status').innerText = "All details collected. Submitting automatically...";
+            
             speak("All details collected. Submitting your complaint now.", () => {
                 submitFinalForm();
             });
