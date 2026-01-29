@@ -50,27 +50,35 @@
         .ai-status-box { background: #003366; color: white; padding: 20px; border-radius: 8px; margin-bottom: 10px; text-align: center; min-height: 80px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
         .ai-text-display { font-size: 1.1rem; font-weight: 500; font-style: italic; color: #FFD700; }
         
-        /* Mic Styles & Animation */
+        /* RESTORED SUBMIT BUTTON STYLING */
+        .btn-submit-row { 
+            background-color: #007bff; 
+            border: none; 
+            padding: 15px; 
+            font-weight: bold; 
+            color: white; 
+            width: 100%; 
+            border-radius: 0 0 8px 8px; 
+            cursor: pointer; 
+            text-transform: uppercase; 
+            transition: 0.3s;
+        }
+        .btn-submit-row:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .btn-submit-row:hover:not(:disabled) { background-color: #0056b3; }
+
+        /* MIC BUTTON & ANIMATION */
         .mic-btn { 
             background: #3f51b5; color: white; border: none; 
-            width: 70px; height: 70px; border-radius: 50%; 
-            font-size: 1.8rem; transition: all 0.3s ease;
+            width: 65px; height: 65px; border-radius: 50%; 
+            font-size: 1.6rem; transition: 0.3s; 
             display: flex; align-items: center; justify-content: center;
         }
-        
-        .mic-on {
-            animation: pulse-blue 1.5s infinite;
-            background: #007bff;
-        }
-
-        .mic-paused { 
-            background: #e63946 !important; 
-            box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.7);
-        }
+        .mic-on { animation: pulse-blue 1.5s infinite; background: #007bff; }
+        .mic-paused { background: #e63946 !important; }
 
         @keyframes pulse-blue {
             0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); }
-            70% { box-shadow: 0 0 0 20px rgba(0, 123, 255, 0); }
+            70% { box-shadow: 0 0 0 15px rgba(0, 123, 255, 0); }
             100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
         }
 
@@ -126,14 +134,13 @@
                     <tr><td class="label-cell">Email ID</td><td class="input-cell"><input type="text" id="field_email" class="form-control" readonly><span class="timer-badge" id="timer_field_email">30s</span></td></tr>
                     <tr><td class="label-cell">Address</td><td class="input-cell"><textarea id="field_address" class="form-control" rows="2" readonly></textarea><span class="timer-badge" id="timer_field_address">30s</span></td></tr>
                     <tr><td class="label-cell">Complaint Type</td><td class="input-cell"><input type="text" id="field_type" class="form-control" readonly><span class="timer-badge" id="timer_field_type">30s</span></td></tr>
-                    <tr><td class="label-cell">Complaint</td><td class="input-cell"><textarea class="form-control" id="field_complaint" rows="4" readonly></textarea><span class="timer-badge" id="timer_field_complaint">30s</span></td></tr>
+                    <tr><td class="label-cell">Complaint</td><td class="input-cell" style="padding:0;"><textarea class="form-control" id="field_complaint" rows="4" readonly style="border:none; border-radius:0;"></textarea><span class="timer-badge" id="timer_field_complaint">30s</span></td></tr>
+                    <tr><td colspan="2" style="padding:0;"><button class="btn-submit-row shadow" id="submitBtn" onclick="submitFinalForm()" disabled>SUBMIT</button></td></tr>
                 </table>
                 
                 <div class="d-flex flex-column align-items-center mt-4">
-                    <button class="mic-btn shadow mb-3" onclick="toggleVoiceAI()" id="voiceBtn">
-                        <i class="bi bi-mic-fill" id="micIcon"></i>
-                    </button>
-                    <button class="btn-submit-row shadow" id="submitBtn" onclick="submitFinalForm()" disabled>SUBMIT</button>
+                    <button class="mic-btn shadow mb-3" onclick="toggleVoiceAI()" id="voiceBtn"><i class="bi bi-mic-fill" id="micIcon"></i></button>
+                    <p class="text-muted small">Click to Pause or Resume AI</p>
                 </div>
             </div>
         </div>
@@ -144,7 +151,6 @@
 // GITHUB_ACTION_PLACEHOLDER
     if (typeof firebaseConfig !== 'undefined') { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
-    const auth = firebase.auth();
 
     const circleData = {
         "Vijayawada": ["Gunadala Section", "Nunna Section", "Governorpet", "Patamata", "Bhavanipuram", "Gannavaram", "Ibrahimpatnam", "Kanchikacherla", "Mylavaram", "Gudivada Division", "Machilipatnam Division", "Vuyyuru Division"],
@@ -171,11 +177,9 @@
     let isPaused = false;
     let aiActive = false;
 
-    
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.lang = 'en-IN'; 
     recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
 
     function getBestMatch(input, options) {
         let bestMatch = input;
@@ -269,18 +273,19 @@
                     currentStep++;
                     setTimeout(askNextQuestion, 600);
                 };
-                recognition.onerror = (e) => {
-                    if (!isPaused) {
-                        recognition.stop();
-                        speak("I didn't catch that. Please try again.", askNextQuestion);
-                    }
-                };
+                recognition.onerror = () => { if (!isPaused) handleFailure(q.id); };
             });
         } else {
-            document.getElementById('ai_status').innerText = "Form Complete. Submitting...";
+            document.getElementById('ai_status').innerText = "Form Complete. Please Click Submit.";
             document.getElementById('submitBtn').disabled = false;
-            speak("All details collected. Submitting now.", () => setTimeout(submitFinalForm, 1000));
+            speak("All details collected. You can now click submit.", () => {});
         }
+    }
+
+    function handleFailure(fieldId) {
+        clearInterval(timerCountdown);
+        recognition.stop();
+        speak("I didn't catch that. Let's try again.", askNextQuestion);
     }
 
     function startTimer(fieldId) {
@@ -292,11 +297,7 @@
             if (!isPaused) {
                 timeLeft--;
                 badge.innerText = timeLeft + "s";
-                if (timeLeft <= 0) {
-                    clearInterval(timerCountdown);
-                    recognition.stop();
-                    speak("Time out. Let's try again.", askNextQuestion);
-                }
+                if (timeLeft <= 0) { clearInterval(timerCountdown); recognition.stop(); handleFailure(fieldId); }
             }
         }, 1000);
     }
@@ -329,7 +330,7 @@
             timestamp: Date.now()
         };
         db.ref('complaints/' + cid).set(data).then(() => {
-            Swal.fire('Success', `Complaint ID: ${cid}`).then(() => window.location.reload());
+            Swal.fire('Success', `Complaint Registered! ID: ${cid}`).then(() => window.location.reload());
         });
     }
 
