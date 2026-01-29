@@ -204,17 +204,32 @@ const firebaseConfig = {
     loadVoices();
 
     function getBestMatch(input, options) {
-        let bestMatch = input;
+        if (!input) return "";
+        let bestMatch = options[0];
+        let highestScore = 0;
+
         const cleanInput = input.toLowerCase().replace(/\s/g, '');
-        
-        for (let opt of options) {
+
+        options.forEach(opt => {
             const cleanOpt = opt.toLowerCase().replace(/\s/g, '').replace('section', '').replace('division', '');
             
-            if (cleanOpt.includes(cleanInput) || cleanInput.includes(cleanOpt)) {
-                return opt;
+            let matches = 0;
+            const smallerLen = Math.min(cleanInput.length, cleanOpt.length);
+            for(let i=0; i<smallerLen; i++) {
+                if(cleanInput[i] === cleanOpt[i]) matches++;
             }
-        }
-        return bestMatch;
+            
+            let score = matches / Math.max(cleanInput.length, cleanOpt.length);
+
+            if (cleanOpt.includes(cleanInput) || cleanInput.includes(cleanOpt)) score += 0.5;
+
+            if (score > highestScore) {
+                highestScore = score;
+                bestMatch = opt;
+            }
+        });
+
+        return highestScore > 0.3 ? bestMatch : input; 
     }
 
     function refineVoiceInput(text, fieldId) {
