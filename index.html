@@ -27,11 +27,28 @@
             color: white; padding: 120px 0; border-radius: 0 0 50px 50px;
         }
 
-        .complaint-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid #dee2e6; margin-top: 20px; }
+        .complaint-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid #dee2e6; margin-top: 20px; border-radius: 8px 8px 0 0; overflow: hidden; }
         .complaint-table td { padding: 12px 20px; border: 1px solid #dee2e6; vertical-align: middle; }
         .label-cell { background-color: #ffffff; font-weight: bold; width: 35%; text-align: right; color: #333; }
         .input-cell { width: 65%; position: relative; }
         .form-control { background-color: #ffffff !important; border: 1px solid #ced4da; padding: 8px; width: 100%; }
+
+        /* IMAGE STYLE SUBMIT BUTTON */
+        .submit-btn-container { width: 100%; margin-top: -1px; }
+        .btn-submit-full {
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 1.2rem;
+            font-weight: 500;
+            border-radius: 0 0 8px 8px;
+            transition: background 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn-submit-full:hover:not(:disabled) { background-color: #0056b3; }
+        .btn-submit-full:disabled { background-color: #a0cfff; cursor: not-allowed; opacity: 0.8; }
 
         .timer-badge {
             position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
@@ -50,18 +67,21 @@
         .ai-status-box { background: #003366; color: white; padding: 20px; border-radius: 8px; margin-bottom: 10px; text-align: center; min-height: 80px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
         .ai-text-display { font-size: 1.1rem; font-weight: 500; font-style: italic; color: #FFD700; }
         
-        /* Mic Button Animation */
-        .mic-btn { background: #3f51b5; color: white; border: none; width: 65px; height: 65px; border-radius: 50%; font-size: 1.6rem; transition: 0.3s; }
-        .mic-active { animation: pulse-red 1.5s infinite; background: #e63946 !important; }
-
-        @keyframes pulse-red {
-            0% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(230, 57, 70, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0); }
+        .mic-btn { 
+            background: #3f51b5; color: white; border: none; 
+            width: 70px; height: 70px; border-radius: 50%; 
+            font-size: 1.8rem; transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: center;
         }
+        
+        .mic-on { animation: pulse-blue 1.5s infinite; background: #007bff; }
+        .mic-paused { background: #e63946 !important; }
 
-        .btn-submit-row { background-color: #007bff; border: none; padding: 15px; font-weight: bold; color: white; width: 100%; border-radius: 0 0 8px 8px; cursor: pointer; text-transform: uppercase; }
-        .btn-submit-row:disabled { background-color: #6c757d; cursor: not-allowed; }
+        @keyframes pulse-blue {
+            0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(0, 123, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
+        }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -115,12 +135,17 @@
                     <tr><td class="label-cell">Email ID</td><td class="input-cell"><input type="text" id="field_email" class="form-control" readonly><span class="timer-badge" id="timer_field_email">30s</span></td></tr>
                     <tr><td class="label-cell">Address</td><td class="input-cell"><textarea id="field_address" class="form-control" rows="2" readonly></textarea><span class="timer-badge" id="timer_field_address">30s</span></td></tr>
                     <tr><td class="label-cell">Complaint Type</td><td class="input-cell"><input type="text" id="field_type" class="form-control" readonly><span class="timer-badge" id="timer_field_type">30s</span></td></tr>
-                    <tr><td class="label-cell">Complaint</td><td class="input-cell" style="padding: 0;"><textarea class="form-control" id="field_complaint" rows="4" readonly style="border: none; border-radius: 0;"></textarea><span class="timer-badge" id="timer_field_complaint">30s</span></td></tr>
-                    <tr><td colspan="2" style="padding: 0;"><button class="btn-submit-row shadow" id="submitBtn" onclick="submitFinalForm()" disabled>SUBMIT</button></td></tr>
+                    <tr><td class="label-cell">Complaint</td><td class="input-cell"><textarea class="form-control" id="field_complaint" rows="4" readonly></textarea><span class="timer-badge" id="timer_field_complaint">30s</span></td></tr>
                 </table>
+                <div class="submit-btn-container">
+                    <button class="btn-submit-full shadow" id="submitBtn" onclick="submitFinalForm()" disabled>Submit</button>
+                </div>
                 
                 <div class="d-flex flex-column align-items-center mt-4">
-                    <button class="mic-btn shadow mb-3" onclick="startVoiceAI()" id="voiceBtn"><i class="bi bi-mic-fill"></i></button>
+                    <button class="mic-btn shadow mb-3" onclick="toggleVoiceAI()" id="voiceBtn">
+                        <i class="bi bi-mic-fill" id="micIcon"></i>
+                    </button>
+                    <p class="text-muted">Tap mic to start voice filing</p>
                 </div>
             </div>
         </div>
@@ -140,8 +165,7 @@ const firebaseConfig = {
   };
     if (typeof firebaseConfig !== 'undefined') { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
-    
-    let selectedAIVoice = null;
+    const auth = firebase.auth();
 
     const circleData = {
         "Vijayawada": ["Gunadala Section", "Nunna Section", "Governorpet", "Patamata", "Bhavanipuram", "Gannavaram", "Ibrahimpatnam", "Kanchikacherla", "Mylavaram", "Gudivada Division", "Machilipatnam Division", "Vuyyuru Division"],
@@ -165,10 +189,13 @@ const firebaseConfig = {
 
     let currentStep = 0;
     let timerCountdown;
+    let isPaused = false;
+    let aiActive = false;
+
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    
     recognition.lang = 'en-IN'; 
     recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
 
     function getBestMatch(input, options) {
         let bestMatch = input;
@@ -193,14 +220,36 @@ const firebaseConfig = {
         return cleanText.charAt(0).toUpperCase() + cleanText.slice(1);
     }
 
-    function startVoiceAI() {
-        currentStep = 0;
-        document.getElementById('voiceBtn').disabled = true;
-        document.getElementById('voiceBtn').classList.add('mic-active');
-        askNextQuestion();
+    function toggleVoiceAI() {
+        const btn = document.getElementById('voiceBtn');
+        const icon = document.getElementById('micIcon');
+
+        if (!aiActive) {
+            aiActive = true;
+            isPaused = false;
+            btn.classList.add('mic-on');
+            icon.className = "bi bi-pause-fill";
+            askNextQuestion();
+        } else {
+            isPaused = !isPaused;
+            if (isPaused) {
+                recognition.stop();
+                window.speechSynthesis.cancel();
+                btn.classList.replace('mic-on', 'mic-paused');
+                icon.className = "bi bi-play-fill";
+                document.getElementById('ai_status').innerText = "AI Paused. Click Play to resume.";
+            } else {
+                btn.classList.replace('mic-paused', 'mic-on');
+                icon.className = "bi bi-pause-fill";
+                document.getElementById('ai_status').innerText = "Resuming...";
+                askNextQuestion();
+            }
+        }
     }
 
     function askNextQuestion() {
+        if (isPaused) return;
+
         if (currentStep < questions.length) {
             const q = questions[currentStep];
             const inputField = document.getElementById(q.id);
@@ -224,11 +273,13 @@ const firebaseConfig = {
             document.getElementById('ai_status').innerText = q.prompt;
             
             speak(q.prompt, () => {
+                if (isPaused) return;
                 document.getElementById('ai_status').innerText = "Listening... (Speak Now)";
                 startTimer(q.id);
                 recognition.start();
 
                 recognition.onresult = (event) => {
+                    if (isPaused) return;
                     clearInterval(timerCountdown);
                     const text = event.results[0][0].transcript;
                     document.getElementById('timer_' + q.id).style.display = 'none';
@@ -238,20 +289,18 @@ const firebaseConfig = {
                     currentStep++;
                     setTimeout(askNextQuestion, 600);
                 };
-                recognition.onerror = () => handleFailure(q.id);
+                recognition.onerror = (e) => {
+                    if (!isPaused) {
+                        recognition.stop();
+                        speak("I didn't catch that. Please try again.", askNextQuestion);
+                    }
+                };
             });
         } else {
-            document.getElementById('ai_status').innerText = "All details collected.";
+            document.getElementById('ai_status').innerText = "Form Complete. Ready to Submit.";
             document.getElementById('submitBtn').disabled = false;
-            document.getElementById('voiceBtn').classList.remove('mic-active');
-            speak("Thank you. Please click submit to register your complaint.", () => {});
+            speak("All details collected. You can now click the submit button.", () => {});
         }
-    }
-
-    function handleFailure(fieldId) {
-        clearInterval(timerCountdown);
-        recognition.stop();
-        speak("I didn't catch that. Let's try again.", askNextQuestion);
     }
 
     function startTimer(fieldId) {
@@ -260,24 +309,25 @@ const firebaseConfig = {
         let timeLeft = 30;
         clearInterval(timerCountdown);
         timerCountdown = setInterval(() => {
-            timeLeft--;
-            badge.innerText = timeLeft + "s";
-            if (timeLeft <= 0) { clearInterval(timerCountdown); handleFailure(fieldId); }
+            if (!isPaused) {
+                timeLeft--;
+                badge.innerText = timeLeft + "s";
+                if (timeLeft <= 0) {
+                    clearInterval(timerCountdown);
+                    recognition.stop();
+                    speak("Time out. Let's try again.", askNextQuestion);
+                }
+            }
         }, 1000);
     }
 
     function speak(text, callback) {
+        if (isPaused) return;
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(text);
-        
-        if (!selectedAIVoice) {
-            const voices = window.speechSynthesis.getVoices();
-            selectedAIVoice = voices.find(v => v.lang.includes('en-IN')) || 
-                              voices.find(v => v.name.includes('Zira')) || 
-                              voices[0];
-        }
-        
-        msg.voice = selectedAIVoice;
+        const voices = window.speechSynthesis.getVoices();
+        const indianVoice = voices.find(v => v.lang.includes('en-IN'));
+        if (indianVoice) msg.voice = indianVoice;
         msg.onend = callback;
         window.speechSynthesis.speak(msg);
     }
@@ -302,8 +352,6 @@ const firebaseConfig = {
             Swal.fire('Success', `Complaint ID: ${cid}`).then(() => window.location.reload());
         });
     }
-
-    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
 
     function showPage(pageId) {
         document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
