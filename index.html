@@ -33,7 +33,6 @@
         .input-cell { width: 65%; position: relative; }
         .form-control { background-color: #ffffff !important; border: 1px solid #ced4da; padding: 8px; width: 100%; }
 
-        /* IMAGE STYLE SUBMIT BUTTON */
         .submit-btn-container { width: 100%; margin-top: -1px; }
         .btn-submit-full {
             width: 100%;
@@ -47,7 +46,6 @@
             transition: background 0.3s ease;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .btn-submit-full:hover:not(:disabled) { background-color: #0056b3; }
         .btn-submit-full:disabled { background-color: #a0cfff; cursor: not-allowed; opacity: 0.8; }
 
         .timer-badge {
@@ -64,7 +62,7 @@
         .option-item { padding: 8px; border-bottom: 1px solid #eee; color: #003366; font-weight: 500; }
 
         .voice-active { border: 2px solid #007bff !important; background-color: #e7f3ff !important; box-shadow: 0 0 10px rgba(0, 123, 255, 0.2); }
-        .ai-status-box { background: #003366; color: white; padding: 20px; border-radius: 8px; margin-bottom: 10px; text-align: center; min-height: 80px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        .ai-status-box { background: #003366; color: white; padding: 20px; border-radius: 8px; margin-bottom: 10px; text-align: center; min-height: 80px; display: flex; align-items: center; justify-content: center; }
         .ai-text-display { font-size: 1.1rem; font-weight: 500; font-style: italic; color: #FFD700; }
         
         .mic-btn { 
@@ -156,7 +154,6 @@
 // GITHUB_ACTION_PLACEHOLDER
     if (typeof firebaseConfig !== 'undefined') { firebase.initializeApp(firebaseConfig); }
     const db = firebase.database();
-    const auth = firebase.auth();
 
     const circleData = {
         "Vijayawada": ["Gunadala Section", "Nunna Section", "Governorpet", "Patamata", "Bhavanipuram", "Gannavaram", "Ibrahimpatnam", "Kanchikacherla", "Mylavaram", "Gudivada Division", "Machilipatnam Division", "Vuyyuru Division"],
@@ -182,11 +179,19 @@
     let timerCountdown;
     let isPaused = false;
     let aiActive = false;
+    let femaleVoice = null;
 
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.lang = 'en-IN'; 
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
+
+    function loadVoices() {
+        const voices = window.speechSynthesis.getVoices();
+        femaleVoice = voices.find(v => (v.name.includes('Female') || v.name.includes('Google UK English Female') || v.name.includes('Microsoft Heera')) && v.lang.includes('en')) || voices[0];
+    }
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
 
     function getBestMatch(input, options) {
         let bestMatch = input;
@@ -288,9 +293,10 @@
                 };
             });
         } else {
-            document.getElementById('ai_status').innerText = "Form Complete. Ready to Submit.";
-            document.getElementById('submitBtn').disabled = false;
-            speak("All details collected. You can now click the submit button.", () => {});
+            document.getElementById('ai_status').innerText = "All details collected. Submitting your complaint now.";
+            speak("All details collected. Submitting your complaint now.", () => {
+                submitFinalForm();
+            });
         }
     }
 
@@ -316,9 +322,8 @@
         if (isPaused) return;
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(text);
-        const voices = window.speechSynthesis.getVoices();
-        const indianVoice = voices.find(v => v.lang.includes('en-IN'));
-        if (indianVoice) msg.voice = indianVoice;
+        if (!femaleVoice) loadVoices();
+        msg.voice = femaleVoice;
         msg.onend = callback;
         window.speechSynthesis.speak(msg);
     }
@@ -340,7 +345,12 @@
             timestamp: Date.now()
         };
         db.ref('complaints/' + cid).set(data).then(() => {
-            Swal.fire('Success', `Complaint ID: ${cid}`).then(() => window.location.reload());
+            Swal.fire({
+                icon: 'success',
+                title: 'Complaint Registered!',
+                text: `Your Complaint ID is: ${cid}`,
+                confirmButtonText: 'OK'
+            }).then(() => window.location.reload());
         });
     }
 
