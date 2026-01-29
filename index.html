@@ -98,15 +98,15 @@
                 </div>
 
                 <table class="complaint-table">
-                    <tr><td class="label-cell">ServiceNumber</td><td class="input-cell"><input type="text" id="field_service" class="form-control" readonly><span class="timer-badge" id="timer_field_service">30s</span></td></tr>
+                    <tr><td class="label-cell">Service Number</td><td class="input-cell"><input type="text" id="field_service" class="form-control" readonly><span class="timer-badge" id="timer_field_service">30s</span></td></tr>
                     <tr><td class="label-cell">Name</td><td class="input-cell"><input type="text" id="field_name" class="form-control" readonly><span class="timer-badge" id="timer_field_name">30s</span></td></tr>
-                    <tr><td class="label-cell">Mobile Number*</td><td class="input-cell"><input type="text" id="field_mobile" class="form-control" readonly maxlength="10"><span class="timer-badge" id="timer_field_mobile">30s</span></td></tr>
-                    <tr><td class="label-cell">Circle*</td><td class="input-cell"><input type="text" id="field_circle" class="form-control" readonly><span class="timer-badge" id="timer_field_circle">30s</span></td></tr>
-                    <tr><td class="label-cell">Division/Section*</td><td class="input-cell"><input type="text" id="field_division" class="form-control" readonly><span class="timer-badge" id="timer_field_division">30s</span></td></tr>
+                    <tr><td class="label-cell">Mobile Number</td><td class="input-cell"><input type="text" id="field_mobile" class="form-control" readonly maxlength="10"><span class="timer-badge" id="timer_field_mobile">30s</span></td></tr>
+                    <tr><td class="label-cell">Circle</td><td class="input-cell"><input type="text" id="field_circle" class="form-control" readonly><span class="timer-badge" id="timer_field_circle">30s</span></td></tr>
+                    <tr><td class="label-cell">Division/Section</td><td class="input-cell"><input type="text" id="field_division" class="form-control" readonly><span class="timer-badge" id="timer_field_division">30s</span></td></tr>
                     <tr><td class="label-cell">Email ID</td><td class="input-cell"><input type="text" id="field_email" class="form-control" readonly><span class="timer-badge" id="timer_field_email">30s</span></td></tr>
-                    <tr><td class="label-cell">Address*</td><td class="input-cell"><textarea id="field_address" class="form-control" rows="2" readonly></textarea><span class="timer-badge" id="timer_field_address">30s</span></td></tr>
-                    <tr><td class="label-cell">Complaint Type*</td><td class="input-cell"><input type="text" id="field_type" class="form-control" readonly><span class="timer-badge" id="timer_field_type">30s</span></td></tr>
-                    <tr><td class="label-cell">Complaint*</td><td class="input-cell"><textarea class="form-control" id="field_complaint" rows="4" readonly></textarea><span class="timer-badge" id="timer_field_complaint">30s</span></td></tr>
+                    <tr><td class="label-cell">Address</td><td class="input-cell"><textarea id="field_address" class="form-control" rows="2" readonly></textarea><span class="timer-badge" id="timer_field_address">30s</span></td></tr>
+                    <tr><td class="label-cell">Complaint Type</td><td class="input-cell"><input type="text" id="field_type" class="form-control" readonly><span class="timer-badge" id="timer_field_type">30s</span></td></tr>
+                    <tr><td class="label-cell">Complaint</td><td class="input-cell"><textarea class="form-control" id="field_complaint" rows="4" readonly></textarea><span class="timer-badge" id="timer_field_complaint">30s</span></td></tr>
                 </table>
                 
                 <div class="d-flex flex-column align-items-center mt-4">
@@ -124,25 +124,6 @@
     const db = firebase.database();
     const auth = firebase.auth();
 
-    function getMobileFromUrl() {
-        const urlParams = new URLSearchParams(window.location.search);
-        let phone = urlParams.get('phone'); 
-        if (phone) {
-            document.getElementById('field_mobile').value = phone.replace(/\D/g, '').slice(-10);
-        }
-    }
-
-    window.addEventListener('DOMContentLoaded', getMobileFromUrl);
-
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            const userPhone = user.phoneNumber ? user.phoneNumber.replace('+91', '') : "";
-            if(userPhone) {
-                document.getElementById('field_mobile').value = userPhone;
-            }
-        }
-    });
-
     const circleData = {
         "Vijayawada": ["Gunadala Section", "Nunna Section", "Governorpet", "Patamata", "Bhavanipuram", "Gannavaram", "Ibrahimpatnam", "Kanchikacherla", "Mylavaram", "Gudivada Division", "Machilipatnam Division", "Vuyyuru Division"],
         "Guntur": ["Guntur-1 Old Town", "Guntur-2 New Town", "Tenali", "Mangalagiri", "Chebrolu", "Chilakaluripet", "Vinukonda", "Sattenapalli"],
@@ -154,7 +135,7 @@
     const questions = [
         { id: "field_service", prompt: "Tell me your service number." },
         { id: "field_name", prompt: "Tell me your full name." },
-        { id: "field_mobile", prompt: "Confirm or tell me your mobile number." },
+        { id: "field_mobile", prompt: "Please provide your 10 digit mobile number." },
         { id: "field_circle", prompt: "Which circle? Vijayawada, Guntur, or Prakasam.", options: Object.keys(circleData) },
         { id: "field_division", prompt: "" },
         { id: "field_email", prompt: "Tell me your email address." },
@@ -225,12 +206,6 @@
         if (currentStep < questions.length) {
             const q = questions[currentStep];
             const inputField = document.getElementById(q.id);
-
-            if (q.id === "field_mobile" && inputField.value !== "") {
-                currentStep++;
-                askNextQuestion();
-                return;
-            }
 
             const overlay = document.getElementById('options-overlay');
             const listContent = document.getElementById('options-list-content');
@@ -335,7 +310,7 @@
         };
 
         db.ref('complaints/' + cid).set(data).then(() => {
-            Swal.fire('Success', `Complaint ID: ${cid}\nPriority: ${detectedPriority}`, 'success')
+            Swal.fire('Success', `Complaint ID: ${cid}`)
                 .then(() => window.location.reload());
         });
     }
