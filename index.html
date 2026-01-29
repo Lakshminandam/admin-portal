@@ -50,9 +50,29 @@
         .ai-status-box { background: #003366; color: white; padding: 20px; border-radius: 8px; margin-bottom: 10px; text-align: center; min-height: 80px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
         .ai-text-display { font-size: 1.1rem; font-weight: 500; font-style: italic; color: #FFD700; }
         
-        .mic-btn { background: #3f51b5; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 1.5rem; transition: 0.3s; }
-        .btn-submit-row { background-color: #007bff; border: none; padding: 15px; font-weight: bold; color: white; width: 100%; border-radius: 0 0 8px 8px; cursor: pointer; text-transform: uppercase; }
-        .btn-submit-row:disabled { background-color: #6c757d; cursor: not-allowed; }
+        /* Mic Styles & Animation */
+        .mic-btn { 
+            background: #3f51b5; color: white; border: none; 
+            width: 70px; height: 70px; border-radius: 50%; 
+            font-size: 1.8rem; transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: center;
+        }
+        
+        .mic-on {
+            animation: pulse-blue 1.5s infinite;
+            background: #007bff;
+        }
+
+        .mic-paused { 
+            background: #e63946 !important; 
+            box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.7);
+        }
+
+        @keyframes pulse-blue {
+            0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(0, 123, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
+        }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -110,7 +130,9 @@
                 </table>
                 
                 <div class="d-flex flex-column align-items-center mt-4">
-                    <button class="mic-btn shadow mb-3" onclick="startVoiceAI()" id="voiceBtn"><i class="bi bi-mic-fill"></i></button>
+                    <button class="mic-btn shadow mb-3" onclick="toggleVoiceAI()" id="voiceBtn">
+                        <i class="bi bi-mic-fill" id="micIcon"></i>
+                    </button>
                     <button class="btn-submit-row shadow" id="submitBtn" onclick="submitFinalForm()" disabled>SUBMIT</button>
                 </div>
             </div>
@@ -146,104 +168,77 @@
 
     let currentStep = 0;
     let timerCountdown;
+    let isPaused = false;
+    let aiActive = false;
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    
     recognition.lang = 'en-IN'; 
-
-    function capitalizeFirstLetter(string) { return string.charAt(0).toUpperCase() + string.slice(1); }
 
     function getBestMatch(input, options) {
         let bestMatch = input;
-        let highestSimilarity = 0;
         const cleanInput = input.toLowerCase().replace(/\s/g, '');
-
         options.forEach(opt => {
             const cleanOpt = opt.toLowerCase().replace(/\s/g, '');
-            if (cleanOpt.includes(cleanInput) || cleanInput.includes(cleanOpt)) {
-                bestMatch = opt;
-            }
+            if (cleanOpt.includes(cleanInput) || cleanInput.includes(cleanOpt)) bestMatch = opt;
         });
         return bestMatch;
     }
 
     function refineVoiceInput(text, fieldId) {
         let cleanText = text.trim();
-        
-        if (fieldId === "field_service" || fieldId === "field_mobile") {
-            return cleanText.replace(/\D/g, ''); 
-        }
-
+        if (fieldId === "field_service" || fieldId === "field_mobile") return cleanText.replace(/\D/g, ''); 
         if (fieldId === "field_email") return cleanText.toLowerCase().replace(/\s+/g, '').replace(/attherate/g, '@').replace(/dot/g, '.');
-
-        if (fieldId === "field_circle") {
-            return getBestMatch(cleanText, Object.keys(circleData));
-        }
+        if (fieldId === "field_circle") return getBestMatch(cleanText, Object.keys(circleData));
         if (fieldId === "field_division") {
-            const currentCircle = document.getElementById('field_circle').value;
-            const options = circleData[currentCircle] || [];
-            return getBestMatch(cleanText, options);
+            const circle = document.getElementById('field_circle').value;
+            return getBestMatch(cleanText, circleData[circle] || []);
         }
-        if (fieldId === "field_type") {
-            return getBestMatch(cleanText, complaintTypes);
-        }
-
-        return capitalizeFirstLetter(text);
+        if (fieldId === "field_type") return getBestMatch(cleanText, complaintTypes);
+        return cleanText.charAt(0).toUpperCase() + cleanText.slice(1);
     }
 
-    function updateAIStatus(text) {
-        document.getElementById('ai_status').innerText = text;
-    }
+    function toggleVoiceAI() {
+        const btn = document.getElementById('voiceBtn');
+        const icon = document.getElementById('micIcon');
 
-    function handleFailure(fieldId) {
-        clearInterval(timerCountdown);
-        recognition.stop();
-        document.getElementById('timer_' + fieldId).style.display = 'none';
-        
-        const retryMsg = "I didn't catch that. Let's try again.";
-        updateAIStatus(retryMsg);
-        speak(retryMsg, () => {
+        if (!aiActive) {
+            aiActive = true;
+            isPaused = false;
+            btn.classList.add('mic-on');
+            icon.className = "bi bi-pause-fill";
             askNextQuestion();
-        });
-    }
-
-    function startTimer(fieldId) {
-        const badge = document.getElementById('timer_' + fieldId);
-        badge.style.display = 'block';
-        let timeLeft = 30;
-        badge.innerText = timeLeft + "s";
-        clearInterval(timerCountdown);
-        timerCountdown = setInterval(() => {
-            timeLeft--;
-            badge.innerText = timeLeft + "s";
-            if (timeLeft <= 0) { handleFailure(fieldId); }
-        }, 1000);
-    }
-
-    function startVoiceAI() {
-        currentStep = 0;
-        document.getElementById('voiceBtn').disabled = true;
-        askNextQuestion();
+        } else {
+            isPaused = !isPaused;
+            if (isPaused) {
+                recognition.stop();
+                window.speechSynthesis.cancel();
+                btn.classList.replace('mic-on', 'mic-paused');
+                icon.className = "bi bi-play-fill";
+                document.getElementById('ai_status').innerText = "AI Paused. Click Play to resume.";
+            } else {
+                btn.classList.replace('mic-paused', 'mic-on');
+                icon.className = "bi bi-pause-fill";
+                document.getElementById('ai_status').innerText = "Resuming...";
+                askNextQuestion();
+            }
+        }
     }
 
     function askNextQuestion() {
+        if (isPaused) return;
+
         if (currentStep < questions.length) {
             const q = questions[currentStep];
             const inputField = document.getElementById(q.id);
-
             const overlay = document.getElementById('options-overlay');
             const listContent = document.getElementById('options-list-content');
-            const title = document.getElementById('overlay-title');
 
             if (q.id === "field_division") {
                 const circle = document.getElementById('field_circle').value;
                 const options = circleData[circle] || [];
                 q.prompt = `Under ${circle} Circle, select one section: ${options.join(", ")}.`;
-                title.innerText = "Select Section";
                 listContent.innerHTML = options.map(opt => `<div class="option-item">${opt}</div>`).join('');
                 overlay.style.display = 'block';
-            } 
-            else if (q.options) {
-                title.innerText = q.id === "field_circle" ? "Select Circle" : "Select Complaint Type";
+            } else if (q.options) {
                 listContent.innerHTML = q.options.map(opt => `<div class="option-item">${opt}</div>`).join('');
                 overlay.style.display = 'block';
             } else {
@@ -251,71 +246,70 @@
             }
 
             inputField.classList.add('voice-active');
-            updateAIStatus(q.prompt);
+            document.getElementById('ai_status').innerText = q.prompt;
             
             speak(q.prompt, () => {
-                updateAIStatus("Listening... (Speak Now)");
+                if (isPaused) return;
+                document.getElementById('ai_status').innerText = "Listening... (Speak Now)";
                 startTimer(q.id);
                 recognition.start();
 
                 recognition.onresult = (event) => {
+                    if (isPaused) return;
                     clearInterval(timerCountdown);
                     const text = event.results[0][0].transcript;
-                    if (text.trim() === "") {
-                        handleFailure(q.id);
-                    } else {
-                        document.getElementById('timer_' + q.id).style.display = 'none';
-                        overlay.style.display = 'none';
-                        inputField.value = refineVoiceInput(text, q.id);
-                        inputField.classList.remove('voice-active');
-                        currentStep++;
-                        setTimeout(askNextQuestion, 600);
+                    document.getElementById('timer_' + q.id).style.display = 'none';
+                    overlay.style.display = 'none';
+                    inputField.value = refineVoiceInput(text, q.id);
+                    inputField.classList.remove('voice-active');
+                    currentStep++;
+                    setTimeout(askNextQuestion, 600);
+                };
+                recognition.onerror = () => {
+                    if (!isPaused) {
+                        recognition.stop();
+                        speak("I didn't catch that. Retrying...", askNextQuestion);
                     }
                 };
-
-                recognition.onerror = () => { handleFailure(q.id); };
             });
         } else {
-            autoSubmitByAI();
+            document.getElementById('ai_status').innerText = "All details collected. Submitting now.";
+            document.getElementById('submitBtn').disabled = false;
+            speak("All details collected. Submitting now.", () => setTimeout(submitFinalForm, 1000));
         }
     }
 
-    function autoSubmitByAI() {
-        const finishMsg = "All details collected. Submitting now.";
-        updateAIStatus(finishMsg);
-        document.getElementById('submitBtn').disabled = false;
-        speak(finishMsg, () => setTimeout(submitFinalForm, 1000));
+    function startTimer(fieldId) {
+        const badge = document.getElementById('timer_' + fieldId);
+        badge.style.display = 'block';
+        let timeLeft = 30;
+        clearInterval(timerCountdown);
+        timerCountdown = setInterval(() => {
+            if (!isPaused) {
+                timeLeft--;
+                badge.innerText = timeLeft + "s";
+                if (timeLeft <= 0) {
+                    clearInterval(timerCountdown);
+                    recognition.stop();
+                    speak("Time out. Let's try again.", askNextQuestion);
+                }
+            }
+        }, 1000);
     }
 
-    function generateId() { return "CP" + Math.random().toString(36).substr(2, 5).toUpperCase(); }
+    function speak(text, callback) {
+        if (isPaused) return;
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        const voices = window.speechSynthesis.getVoices();
+        const indianVoice = voices.find(v => v.lang.includes('en-IN') || v.name.includes('Zira'));
+        if (indianVoice) msg.voice = indianVoice;
+        msg.onend = callback;
+        window.speechSynthesis.speak(msg);
+    }
 
     async function submitFinalForm() {
-        const cid = generateId();
-        const descriptionText = document.getElementById('field_complaint').value;
-        const submitBtn = document.getElementById('submitBtn');
-        
-        submitBtn.disabled = true;
-        updateAIStatus("AI is analyzing priority...");
-
-        let detectedPriority = "Medium"; 
-
-        try {
-            const response = await fetch('http://127.0.0.1:5000/predict_priority', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ "complaint": descriptionText })
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                detectedPriority = result.priority;
-                updateAIStatus("Priority Detected: " + detectedPriority);
-            }
-        } catch (error) {
-            console.error("AI Server Unreachable:", error);
-            updateAIStatus("AI Offline. Using default priority.");
-        }
-
+        const cid = "CP" + Math.random().toString(36).substr(2, 5).toUpperCase();
         const data = {
             complaintId: cid,
             serviceNumber: document.getElementById('field_service').value,
@@ -326,33 +320,14 @@
             email: document.getElementById('field_email').value,
             address: document.getElementById('field_address').value,
             complaintType: document.getElementById('field_type').value,
-            description: descriptionText,
-            priority: detectedPriority, 
+            description: document.getElementById('field_complaint').value,
             status: "Pending",
             timestamp: Date.now()
         };
-
         db.ref('complaints/' + cid).set(data).then(() => {
-            Swal.fire('Success', `Complaint ID: ${cid}`)
-                .then(() => window.location.reload());
+            Swal.fire('Success', `Complaint ID: ${cid}`).then(() => window.location.reload());
         });
     }
-
-    function speak(text, callback) {
-        window.speechSynthesis.cancel();
-        const msg = new SpeechSynthesisUtterance(text);
-        const voices = window.speechSynthesis.getVoices();
-        const femaleVoice = voices.find(v => 
-            v.lang.includes('en-IN') || 
-            v.name.includes('Zira') || 
-            v.name.includes('Female')
-        );
-        if (femaleVoice) msg.voice = femaleVoice;
-        msg.onend = callback;
-        window.speechSynthesis.speak(msg);
-    }
-
-    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
 
     function showPage(pageId) {
         document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
