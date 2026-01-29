@@ -156,23 +156,46 @@ const firebaseConfig = {
     let currentStep = 0;
     let timerCountdown;
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = 'en-US';
+    
+    recognition.lang = 'en-IN'; 
 
     function capitalizeFirstLetter(string) { return string.charAt(0).toUpperCase() + string.slice(1); }
 
+    function getBestMatch(input, options) {
+        let bestMatch = input;
+        let highestSimilarity = 0;
+        const cleanInput = input.toLowerCase().replace(/\s/g, '');
+
+        options.forEach(opt => {
+            const cleanOpt = opt.toLowerCase().replace(/\s/g, '');
+            if (cleanOpt.includes(cleanInput) || cleanInput.includes(cleanOpt)) {
+                bestMatch = opt;
+            }
+        });
+        return bestMatch;
+    }
+
     function refineVoiceInput(text, fieldId) {
-        let cleanText = text.trim().toLowerCase();
-        if (fieldId === "field_email") return cleanText.replace(/\s+/g, '').replace(/attherate/g, '@').replace(/dot/g, '.');
+        let cleanText = text.trim();
+        
+        if (fieldId === "field_service" || fieldId === "field_mobile") {
+            return cleanText.replace(/\D/g, ''); 
+        }
+
+        if (fieldId === "field_email") return cleanText.toLowerCase().replace(/\s+/g, '').replace(/attherate/g, '@').replace(/dot/g, '.');
+
         if (fieldId === "field_circle") {
-            if (cleanText.includes("vija")) return "Vijayawada";
-            if (cleanText.includes("gun")) return "Guntur";
-            if (cleanText.includes("prak")) return "Prakasam";
+            return getBestMatch(cleanText, Object.keys(circleData));
+        }
+        if (fieldId === "field_division") {
+            const currentCircle = document.getElementById('field_circle').value;
+            const options = circleData[currentCircle] || [];
+            return getBestMatch(cleanText, options);
         }
         if (fieldId === "field_type") {
-            const found = complaintTypes.find(t => cleanText.includes(t.toLowerCase()));
-            return found ? found : capitalizeFirstLetter(text);
+            return getBestMatch(cleanText, complaintTypes);
         }
-        if (fieldId === "field_mobile") return cleanText.replace(/\D/g, '').slice(-10);
+
         return capitalizeFirstLetter(text);
     }
 
@@ -329,9 +352,9 @@ const firebaseConfig = {
         const msg = new SpeechSynthesisUtterance(text);
         const voices = window.speechSynthesis.getVoices();
         const femaleVoice = voices.find(v => 
+            v.lang.includes('en-IN') || 
             v.name.includes('Zira') || 
-            v.name.includes('Female') || 
-            (v.name.includes('Google') && v.name.includes('UK English'))
+            v.name.includes('Female')
         );
         if (femaleVoice) msg.voice = femaleVoice;
         msg.onend = callback;
