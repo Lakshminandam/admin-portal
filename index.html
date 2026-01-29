@@ -170,8 +170,12 @@
     let timerCountdown;
     let isPaused = false;
     let aiActive = false;
+
+    
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.lang = 'en-IN'; 
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
 
     function getBestMatch(input, options) {
         let bestMatch = input;
@@ -265,15 +269,15 @@
                     currentStep++;
                     setTimeout(askNextQuestion, 600);
                 };
-                recognition.onerror = () => {
+                recognition.onerror = (e) => {
                     if (!isPaused) {
                         recognition.stop();
-                        speak("I didn't catch that. Retrying...", askNextQuestion);
+                        speak("I didn't catch that. Please try again.", askNextQuestion);
                     }
                 };
             });
         } else {
-            document.getElementById('ai_status').innerText = "All details collected. Submitting now.";
+            document.getElementById('ai_status').innerText = "Form Complete. Submitting...";
             document.getElementById('submitBtn').disabled = false;
             speak("All details collected. Submitting now.", () => setTimeout(submitFinalForm, 1000));
         }
@@ -302,7 +306,7 @@
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(text);
         const voices = window.speechSynthesis.getVoices();
-        const indianVoice = voices.find(v => v.lang.includes('en-IN') || v.name.includes('Zira'));
+        const indianVoice = voices.find(v => v.lang.includes('en-IN'));
         if (indianVoice) msg.voice = indianVoice;
         msg.onend = callback;
         window.speechSynthesis.speak(msg);
