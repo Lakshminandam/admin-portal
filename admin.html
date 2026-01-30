@@ -208,11 +208,11 @@
         <button class="btn-close-custom" onclick="window.location.href='index.html'">CLOSE</button>
     </div>
 </div>
-
 <script>
-// GITHUB_ACTION_PLACEHOLDER
+    const firebaseConfig = // GITHUB_ACTION_PLACEHOLDER
+    {};
 
-    if (typeof firebaseConfig !== 'undefined') {
+    if (firebaseConfig && firebaseConfig.apiKey) {
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
