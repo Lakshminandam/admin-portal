@@ -15,15 +15,21 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Inject Firebase Config
+      - name: Inject Secrets
         env:
           FB_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
+          EMAIL_KEY: ${{ secrets.EMAILJS_PUBLIC_KEY }}
         run: |
           export SECRET_DATA="${FB_CONFIG}"
+          export EMAIL_DATA="${EMAIL_KEY}"
+          
           perl -i -pe 's|// GITHUB_ACTION_PLACEHOLDER|$ENV{SECRET_DATA}|g' index.html
           perl -i -pe 's|// GITHUB_ACTION_PLACEHOLDER|$ENV{SECRET_DATA}|g' admin.html
           perl -i -pe 's|// GITHUB_ACTION_PLACEHOLDER|$ENV{SECRET_DATA}|g' dashboard.html
-
+          
+          perl -i -pe "s|// EMAIL_JS_PLACEHOLDER|$ENV{EMAIL_DATA}|g" index.html
+          perl -i -pe "s|// EMAIL_JS_PLACEHOLDER|$ENV{EMAIL_DATA}|g" admin.html
+          perl -i -pe "s|// EMAIL_JS_PLACEHOLDER|$ENV{EMAIL_DATA}|g" dashboard.html
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
