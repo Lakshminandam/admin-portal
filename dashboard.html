@@ -40,6 +40,7 @@
         .btn-start { background-color: #ef6c00; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
         .btn-resolve { background-color: #2e7d32; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
         
+        /* Fixed Top Right Email Styling */
         #adminEmail { 
             background: #e0e7ff; 
             padding: 5px 15px; 
@@ -133,13 +134,33 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    const firebaseConfig = {
+apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
+    "authDomain": "voice-complaint.firebaseapp.com",
+    "databaseURL': "https://voice-complaint-default-rtdb.firebaseio.com",
+    "projectId": "voice-complaint",
+    "storageBucket": "voice-complaint.firebasestorage.app",
+    "messagingSenderId": "138166783170",
+    "appId": "1:138166783170:web:ae54b798e700d4a03e7f5b",
+    "measurementId": "G-K9KERE9NMT"
+    "emailjsKey": "mCBa5iWGUt2x0B_EM"
+    "emailjsService": "service_vu4qks5",
+    "otpTemplate": "template_odmbb0m",
+    "complaintTemplate": "template_q1m241f"
+}
+    {};
+
     let auth, db, activeKey = null;
     const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
 
     function initFirebase() {
-        if (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey) {
+        const configToUse = (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey) 
+                            ? firebaseConfig 
+                            : (typeof window.firebaseConfig !== 'undefined' ? window.firebaseConfig : null);
+
+        if (configToUse && configToUse.apiKey) {
             if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
+                firebase.initializeApp(configToUse);
             }
             auth = firebase.auth(); 
             db = firebase.database();
@@ -163,8 +184,7 @@
     function logout() { 
         auth.signOut().then(() => { 
             window.location.replace('index.html'); 
-        }).catch((error) => {
-            console.error("Logout Error:", error);
+        }).catch(() => {
             window.location.replace('index.html');
         }); 
     }
@@ -217,7 +237,6 @@
                         <td><span class="status-badge ${bClass}">${status}</span></td>
                     </tr>`;
             });
-
             updateCounts(counts);
         });
     }
@@ -238,12 +257,8 @@
             
             document.getElementById('modalTitle').innerText = "Details for ID: " + (d.complaintId || key);
             document.getElementById('officerRemarks').value = d.officer_remarks || "";
-            document.getElementById('officerRemarks').disabled = false; 
-
             document.getElementById('startWorkBtn').style.display = (status === 'pending' || isReopened) ? 'block' : 'none';
             document.getElementById('resolveBtn').style.display = (status !== 'resolved') ? 'block' : 'none';
-
-            const sectionDisplay = d.division || d.section || 'N/A';
 
             let html = `
                 <div class="row">
@@ -251,24 +266,18 @@
                         <div class="detail-item"><i class="bi bi-person-fill"></i><span><strong>Citizen:</strong> ${d.name || 'N/A'}</span></div>
                         <div class="detail-item"><i class="bi bi-telephone-fill"></i><span><strong>Mobile:</strong> ${d.mobile || 'N/A'}</span></div>
                         <div class="detail-item"><i class="bi bi-lightning-charge-fill"></i><span><strong>Service No:</strong> ${d.serviceNumber || 'N/A'}</span></div>
-                        <div class="detail-item"><i class="bi bi-envelope-at"></i><span><strong>Email:</strong> ${d.email || 'N/A'}</span></div>
                     </div>
                     <div class="col-md-6 ps-md-4">
-                        <div class="detail-item"><i class="bi bi-geo-alt-fill"></i><span><strong>Circle / Section:</strong> ${d.circle || 'N/A'} / ${sectionDisplay}</span></div>
+                        <div class="detail-item"><i class="bi bi-geo-alt-fill"></i><span><strong>Circle/Section:</strong> ${d.circle || 'N/A'}/${d.division || d.section || 'N/A'}</span></div>
                         <div class="detail-item"><i class="bi bi-calendar-check"></i><span><strong>Registered:</strong> ${formatTime(d.timestamp || d.createdAt)}</span></div>
-                        <div class="detail-item"><i class="bi bi-tag-fill"></i><span><strong>Type:</strong> ${d.complaintType || 'N/A'}</span></div>
                     </div>
                 </div>
                 <hr>
-                <div class="detail-item"><i class="bi bi-exclamation-triangle-fill"></i><span><strong>Priority:</strong> <span class="badge" style="background-color: ${d.priority === 'High' ? '#dc3545' : '#6c757d'}">${d.priority || 'Medium'}</span></span></div>
-                <div class="description-box"><strong>Grievance Description:</strong><br>${d.description || "N/A"}</div>
-                <div class="description-box bg-light"><strong>Address:</strong><br>${d.address || "N/A"}</div>
+                <div class="description-box"><strong>Description:</strong><br>${d.description || "N/A"}</div>
             `;
-
             if (isReopened && d.reopen_reason) {
-                html += `<div class="reopen-box"><strong><i class="bi bi-exclamation-triangle-fill"></i> RE-OPEN REASON:</strong><br>${d.reopen_reason}</div>`;
+                html += `<div class="reopen-box"><strong>RE-OPEN REASON:</strong><br>${d.reopen_reason}</div>`;
             }
-
             document.getElementById('modalDataContent').innerHTML = html;
             detailsModal.show();
         });
@@ -276,25 +285,11 @@
 
     function updateStatus(newStatus) {
         const remarks = document.getElementById('officerRemarks').value.trim();
-        if (newStatus === 'resolved' && remarks === "") {
-            alert("Please provide resolution remarks before resolving.");
-            return;
-        }
-        
-        let updates = { 
-            status: newStatus, 
-            officer_remarks: remarks 
-        };
-        
-        if (newStatus === 'in progress') updates['work_started_at'] = firebase.database.ServerValue.TIMESTAMP;
-        if (newStatus === 'resolved') updates['resolved_at'] = firebase.database.ServerValue.TIMESTAMP;
-        
-        db.ref('complaints/' + activeKey).update(updates).then(() => { 
-            detailsModal.hide(); 
-        }).catch((error) => { 
-            alert("Error updating status: " + error.message); 
-        });
+        if (newStatus === 'resolved' && remarks === "") { alert("Provide remarks first."); return; }
+        let updates = { status: newStatus, officer_remarks: remarks };
+        db.ref('complaints/' + activeKey).update(updates).then(() => { detailsModal.hide(); });
     }
+
     initFirebase();
 </script>
 </body>
