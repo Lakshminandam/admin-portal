@@ -208,9 +208,8 @@
         <button class="btn-close-custom" onclick="window.location.href='index.html'">CLOSE</button>
     </div>
 </div>
-
 <script>
-{
+    const firebaseConfig = {
 apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
     "authDomain": "voice-complaint.firebaseapp.com",
     "databaseURL': "https://voice-complaint-default-rtdb.firebaseio.com",
@@ -224,8 +223,9 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
     "otpTemplate": "template_odmbb0m",
     "complaintTemplate": "template_q1m241f"
 }
+    {};
 
-    if (typeof firebaseConfig !== 'undefined') {
+    if (firebaseConfig && firebaseConfig.apiKey) {
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
