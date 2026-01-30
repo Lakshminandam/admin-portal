@@ -40,16 +40,13 @@
         .btn-start { background-color: #ef6c00; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
         .btn-resolve { background-color: #2e7d32; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
         
-        /* Optimized column widths */
-        .col-id { width: 8%; }
-        .col-name { width: 15%; }
-        .col-mobile { width: 12%; }
-        .col-service { width: 12%; }
-        .col-circle { width: 10%; }
-        .col-section { width: 10%; }
-        .col-type { width: 13%; }
-        .col-priority { width: 10%; }
-        .col-status { width: 10%; }
+        #adminEmail { 
+            background: #e0e7ff; 
+            padding: 5px 15px; 
+            border-radius: 50px; 
+            font-size: 0.9rem;
+            border: 1px solid #c7d2fe;
+        }
 
         @media (max-width: 768px) { .sidebar { position: relative; min-height: auto; width: 100%; } .main-content { margin-left: 0; } }
     </style>
@@ -69,7 +66,10 @@
         <div class="col-md-10 main-content">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3 class="fw-bold">Grievance Dashboard</h3>
-                <div id="adminEmail" class="fw-bold text-primary"></div>
+                <div class="d-flex align-items-center">
+                    <span class="me-2 text-muted small">Logged in as:</span>
+                    <div id="adminEmail" class="fw-bold text-primary">Loading...</div>
+                </div>
             </div>
 
             <div class="row g-3 mb-4 text-center">
@@ -84,15 +84,15 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
-                                <th class="ps-4 col-id">ID</th>
-                                <th class="col-name">Citizen Name</th>
-                                <th class="col-mobile">Mobile</th>
-                                <th class="col-service">Service No</th>
-                                <th class="col-circle">Circle</th>
-                                <th class="col-section">Section</th>
-                                <th class="col-type">Type</th>
-                                <th class="col-priority">Priority</th>
-                                <th class="col-status">Status</th>
+                                <th class="ps-4">ID</th>
+                                <th>Citizen Name</th>
+                                <th>Mobile</th>
+                                <th>Service No</th>
+                                <th>Circle</th>
+                                <th>Section</th>
+                                <th>Type</th>
+                                <th>Priority</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody id="complaintsTable">
@@ -133,9 +133,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const firebaseConfig = // GITHUB_ACTION_PLACEHOLDER
-    {};
-
     let auth, db, activeKey = null;
     const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
 
@@ -158,9 +155,18 @@
                 document.getElementById('adminEmail').innerText = user.email;
                 loadComplaints(); 
             } else { 
-                window.location.href = 'admin.html'; 
+                window.location.replace('admin.html'); 
             }
         });
+    }
+
+    function logout() { 
+        auth.signOut().then(() => { 
+            window.location.replace('index.html'); 
+        }).catch((error) => {
+            console.error("Logout Error:", error);
+            window.location.replace('index.html');
+        }); 
     }
 
     function formatTime(ts) {
@@ -187,7 +193,6 @@
                 const data = child.val();
                 const key = child.key;
                 const status = (data.status || 'pending').toLowerCase();
-                
                 const p = (data.priority || 'Medium').toUpperCase();
                 
                 let bClass = 'bg-pending';
@@ -197,7 +202,6 @@
                 else { counts.pending++; bClass = 'bg-pending'; }
 
                 const pColor = p === 'HIGH' ? '#dc3545' : (p === 'LOW' ? '#2e7d32' : '#f57c00');
-
                 const sectionDisplay = data.division || data.section || 'N/A';
 
                 tableBody.innerHTML += `
@@ -233,8 +237,6 @@
             const isReopened = (status === 'reopened' || status === 're-opened');
             
             document.getElementById('modalTitle').innerText = "Details for ID: " + (d.complaintId || key);
-            
-            const defaultSentence = "Officer has acknowledged and started work on this grievance.";
             document.getElementById('officerRemarks').value = d.officer_remarks || "";
             document.getElementById('officerRemarks').disabled = false; 
 
@@ -292,12 +294,6 @@
         }).catch((error) => { 
             alert("Error updating status: " + error.message); 
         });
-    }
-
-    function logout() { 
-        auth.signOut().then(() => { 
-            window.location.href = 'index.html'; 
-        }); 
     }
     initFirebase();
 </script>
