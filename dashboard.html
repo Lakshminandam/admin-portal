@@ -14,7 +14,7 @@
     <style>
         :root { --primary: #003366; --accent: #FFD700; --bg: #f1f5f9; --teal-dark: #00695c; }
         body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; }
-        .sidebar { background: var(--primary); min-height: 100vh; color: white; padding-top: 20px; position: fixed; width: inherit; z-index: 100; }
+        .sidebar { background: var(--primary); min-height: 100vh; color: white; padding-top: 20px; position: fixed; width: 16.666667%; z-index: 100; }
         .nav-link { color: rgba(255,255,255,0.8); transition: 0.3s; margin: 5px 15px; border-radius: 8px; text-decoration: none; display: block; padding: 10px; }
         .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.1); color: white; }
         .main-content { padding: 30px; margin-left: 16.666667%; }
@@ -40,7 +40,6 @@
         .btn-start { background-color: #ef6c00; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
         .btn-resolve { background-color: #2e7d32; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
         
-        /* Fixed Top Right Email Styling */
         #adminEmail { 
             background: #e0e7ff; 
             padding: 5px 15px; 
@@ -134,7 +133,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const firebaseConfig = {
+    if (typeof firebaseConfig === 'undefined') {
+        var firebaseConfig = {
     "apiKey": "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
     "authDomain": "voice-complaint.firebaseapp.com",
     "databaseURL': "https://voice-complaint-default-rtdb.firebaseio.com",
@@ -148,15 +148,14 @@
     "otpTemplate": "template_odmbb0m",
     "complaintTemplate": "template_q1m241f"
 }
-    {};
+        {};
+    }
 
     let auth, db, activeKey = null;
-    const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
+    let detailsModal;
 
     function initFirebase() {
-        const configToUse = (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey) 
-                            ? firebaseConfig 
-                            : (typeof window.firebaseConfig !== 'undefined' ? window.firebaseConfig : null);
+        const configToUse = window.firebaseConfig || firebaseConfig;
 
         if (configToUse && configToUse.apiKey) {
             if (!firebase.apps.length) {
@@ -164,9 +163,13 @@
             }
             auth = firebase.auth(); 
             db = firebase.database();
+            
+            detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
+            
             setupAuthListener();
         } else {
-            console.error("Firebase Configuration is missing!");
+            console.error("Firebase Configuration is missing! Check your config.js file.");
+            document.getElementById('complaintsTable').innerHTML = '<tr><td colspan="9" class="text-center py-4 text-danger">Configuration Error.</td></tr>';
         }
     }
 
@@ -182,11 +185,13 @@
     }
 
     function logout() { 
-        auth.signOut().then(() => { 
-            window.location.replace('index.html'); 
-        }).catch(() => {
+        if(auth) {
+            auth.signOut().finally(() => { 
+                window.location.replace('index.html'); 
+            });
+        } else {
             window.location.replace('index.html');
-        }); 
+        }
     }
 
     function formatTime(ts) {
@@ -238,6 +243,8 @@
                     </tr>`;
             });
             updateCounts(counts);
+        }, (error) => {
+            console.error("Database Read Error:", error);
         });
     }
 
@@ -285,11 +292,23 @@
 
     function updateStatus(newStatus) {
         const remarks = document.getElementById('officerRemarks').value.trim();
-        if (newStatus === 'resolved' && remarks === "") { alert("Provide remarks first."); return; }
-        let updates = { status: newStatus, officer_remarks: remarks };
-        db.ref('complaints/' + activeKey).update(updates).then(() => { detailsModal.hide(); });
+        if (newStatus === 'resolved' && remarks === "") { 
+            alert("Please provide officer remarks before resolving."); 
+            return; 
+        }
+        
+        let updates = { 
+            status: newStatus, 
+            officer_remarks: remarks,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP
+        };
+        
+        db.ref('complaints/' + activeKey).update(updates).then(() => { 
+            detailsModal.hide(); 
+        }).catch((err) => {
+            alert("Error updating status: " + err.message);
+        });
     }
-
     initFirebase();
 </script>
 </body>
