@@ -83,7 +83,7 @@
 
 <nav class="navbar navbar-expand-lg navbar-dark shadow">
     <div class="container">
-        <a class="navbar-brand fw-bold" onclick="showPage('home')">
+        <a class="navbar-brand fw-bold" onclick="showPage('home')" style="cursor: pointer;">
             <i class="bi bi-lightning-charge-fill text-warning"></i> ELECTRICITY PORTAL
         </a>
         <div class="collapse navbar-collapse">
@@ -144,13 +144,27 @@
     const firebaseConfig = // GITHUB_ACTION_PLACEHOLDER
     {};
 
-    if (firebaseConfig && firebaseConfig.apiKey) { 
-        firebase.initializeApp(firebaseConfig); 
-        if(firebaseConfig.emailjsKey) {
-            emailjs.init(firebaseConfig.emailjsKey);
+    let db;
+
+    function initFirebase() {
+        const configToUse = (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey) 
+                            ? firebaseConfig 
+                            : (typeof window.firebaseConfig !== 'undefined' ? window.firebaseConfig : null);
+
+        if (configToUse && configToUse.apiKey) {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(configToUse);
+            }
+            db = firebase.database();
+            if(configToUse.emailjsKey) {
+                emailjs.init(configToUse.emailjsKey);
+            }
+        } else {
+            console.warn("Firebase config not found. Database features will be disabled.");
         }
     }
-    const db = firebase.database();
+    
+    initFirebase();
 
     const circleData = {
         "Vijayawada": ["Gunadala Section", "Nunna Section", "Governorpet", "Patamata", "Bhavanipuram", "Gannavaram", "Ibrahimpatnam", "Kanchikacherla", "Mylavaram", "Gudivada Division", "Machilipatnam Division", "Vuyyuru Division"],
@@ -368,6 +382,10 @@
     }
 
     async function submitFinalForm() {
+        if (!db) {
+            Swal.fire('Error', 'Database not connected. Check Firebase configuration.', 'error');
+            return;
+        }
         const cid = "CP" + Math.random().toString(36).substr(2, 5).toUpperCase();
         const data = {
             complaintId: cid, 
@@ -385,21 +403,24 @@
         };
 
         db.ref('complaints/' + cid).set(data).then(() => {
-            if (firebaseConfig.emailjsKey && firebaseConfig.emailjsService && firebaseConfig.complaintTemplate) {
-                const templateParams = {
-                    to_email: data.email,
-                    user_name: data.name,
-                    complaint_id: cid,
-                    service_number: data.serviceNumber,
-                    complaint_type: data.complaintType,
-                    description: data.description
-                };
+            if (typeof emailjs !== 'undefined') {
+                const configToUse = (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey) ? firebaseConfig : window.firebaseConfig;
+                if (configToUse && configToUse.emailjsService && configToUse.complaintTemplate) {
+                    const templateParams = {
+                        to_email: data.email,
+                        user_name: data.name,
+                        complaint_id: cid,
+                        service_number: data.serviceNumber,
+                        complaint_type: data.complaintType,
+                        description: data.description
+                    };
 
-                emailjs.send(
-                    firebaseConfig.emailjsService,
-                    firebaseConfig.complaintTemplate,
-                    templateParams
-                ).catch(err => console.error('Email failed:', err));
+                    emailjs.send(
+                        configToUse.emailjsService,
+                        configToUse.complaintTemplate,
+                        templateParams
+                    ).catch(err => console.error('Email failed:', err));
+                }
             }
 
             Swal.fire({
@@ -415,7 +436,10 @@
 
     function showPage(pageId) {
         document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
-        document.getElementById(pageId).classList.add('active-page');
+        const targetPage = document.getElementById(pageId);
+        if (targetPage) {
+            targetPage.classList.add('active-page');
+        }
         if (pageId !== 'complaint') {
             aiActive = false;
             window.speechSynthesis.cancel();
