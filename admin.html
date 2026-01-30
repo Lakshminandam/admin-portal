@@ -222,6 +222,7 @@
                 firebase.initializeApp(configToUse);
             }
             auth = firebase.auth();
+            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
             console.log("Firebase Auth initialized.");
         } else {
             console.error("Firebase configuration missing.");
@@ -263,6 +264,7 @@
         loginBtn.disabled = true;
 
         if (email === "admin@gmail.com" && password === "admin123") {
+            sessionStorage.setItem('isAdmin', 'true');
             successRedirect();
             return;
         }
@@ -270,6 +272,7 @@
         if (auth) {
             try {
                 await auth.signInWithEmailAndPassword(email, password);
+                sessionStorage.setItem('isAdmin', 'true');
                 successRedirect();
             } catch (error) {
                 console.error("Login Error:", error.code, error.message);
@@ -296,7 +299,7 @@
             icon: 'success', 
             title: 'Welcome Admin',
             text: 'Redirecting to dashboard...',
-            timer: 1500,
+            timer: 1000,
             showConfirmButton: false
         }).then(() => {
             window.location.replace('dashboard.html');
@@ -306,4 +309,3 @@
 
 </body>
 </html>
-
