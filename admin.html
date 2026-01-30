@@ -178,7 +178,7 @@
             <label class="form-label">Official Email</label>
             <div class="input-group-custom">
                 <i class="bi bi-envelope"></i>
-                <input type="email" id="email" class="form-control-custom" placeholder="Enter your email" value="admin@gmail.com">
+                <input type="email" id="email" class="form-control-custom" placeholder="Enter your email">
             </div>
         </div>
 
@@ -186,7 +186,7 @@
             <label class="form-label">Password</label>
             <div class="input-group-custom">
                 <i class="bi bi-lock"></i>
-                <input type="password" id="password" class="form-control-custom" placeholder="Enter password" value="admin123">
+                <input type="password" id="password" class="form-control-custom" placeholder="Enter password">
             </div>
         </div>
 
@@ -210,28 +210,12 @@
 </div>
 
 <script>
-    const firebaseConfig = {
-apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
-    "authDomain": "voice-complaint.firebaseapp.com",
-    "databaseURL': "https://voice-complaint-default-rtdb.firebaseio.com",
-    "projectId": "voice-complaint",
-    "storageBucket": "voice-complaint.firebasestorage.app",
-    "messagingSenderId": "138166783170",
-    "appId": "1:138166783170:web:ae54b798e700d4a03e7f5b",
-    "measurementId": "G-K9KERE9NMT"
-    "emailjsKey": "mCBa5iWGUt2x0B_EM"
-    "emailjsService": "service_vu4qks5",
-    "otpTemplate": "template_odmbb0m",
-    "complaintTemplate": "template_q1m241f"
-} 
-    {};
+    var firebaseConfig = firebaseConfig || {};
 
     if (firebaseConfig && firebaseConfig.apiKey) {
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
-    } else {
-        console.error("Firebase configuration missing!");
     }
     
     const auth = firebase.auth();
@@ -269,7 +253,7 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
         loginBtn.disabled = true;
 
         try {
-            const userCredential = await auth.signInWithEmailAndPassword(email, password);
+            await auth.signInWithEmailAndPassword(email, password);
             successRedirect();
         } catch (error) {
             if (email === "admin@gmail.com" && password === "admin123") {
@@ -282,6 +266,7 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
                 let msg = "Invalid email or password";
                 if (error.code === 'auth/user-not-found') msg = "No account found with this email.";
                 if (error.code === 'auth/wrong-password') msg = "Incorrect password.";
+                if (error.code === 'auth/invalid-email') msg = "Please enter a valid email format.";
                 
                 Swal.fire('Login Failed', msg, 'error');
                 refreshCaptcha();
@@ -297,7 +282,7 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
             timer: 1500,
             showConfirmButton: false
         }).then(() => {
-            window.location.href = 'dashboard.html';
+            window.location.replace('dashboard.html');
         });
     }
 </script>
