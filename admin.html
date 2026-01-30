@@ -208,6 +208,7 @@
         <button class="btn-close-custom" onclick="window.location.href='index.html'">CLOSE</button>
     </div>
 </div>
+
 <script>
     const firebaseConfig = {
 apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
@@ -222,13 +223,15 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
     "emailjsService": "service_vu4qks5",
     "otpTemplate": "template_odmbb0m",
     "complaintTemplate": "template_q1m241f"
-}
+} 
     {};
 
     if (firebaseConfig && firebaseConfig.apiKey) {
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
+    } else {
+        console.error("Firebase configuration missing!");
     }
     
     const auth = firebase.auth();
@@ -245,9 +248,9 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
     window.onload = refreshCaptcha;
 
     async function handleLogin() {
-        const email = document.getElementById('email').value;
+        const email = document.getElementById('email').value.trim();
         const password = document.getElementById('password').value;
-        const captchaInput = document.getElementById('captchaInput').value;
+        const captchaInput = document.getElementById('captchaInput').value.trim();
         const captchaReal = document.getElementById('captcha').innerText;
         const loginBtn = document.getElementById('loginBtn');
 
@@ -266,9 +269,12 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
         loginBtn.disabled = true;
 
         try {
-            await auth.signInWithEmailAndPassword(email, password);
+            console.log("Attempting login for:", email);
+            
+            const userCredential = await auth.signInWithEmailAndPassword(email, password);
+            
             Swal.fire({
-                icon: 'success',
+                icon: 'Success',
                 title: 'Welcome Admin',
                 text: 'Redirecting to dashboard...',
                 timer: 1500,
@@ -277,11 +283,18 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
                 window.location.href = 'dashboard.html';
             });
         } catch (error) {
+            console.error("Login Error:", error.code, error.message);
             loginBtn.innerText = "LOGIN";
             loginBtn.disabled = false;
+            
             let msg = "Invalid email or password";
-            if (error.code === 'auth/user-not-found') msg = "User not registered";
+            if (error.code === 'auth/user-not-found') msg = "No account found with this email.";
+            if (error.code === 'auth/wrong-password') msg = "Incorrect password.";
+            if (error.code === 'auth/invalid-email') msg = "The email address is badly formatted.";
+            if (error.code === 'auth/too-many-requests') msg = "Access disabled due to many failed attempts. Try later.";
+
             Swal.fire('Login Failed', msg, 'error');
+            refreshCaptcha();
         }
     }
 </script>
