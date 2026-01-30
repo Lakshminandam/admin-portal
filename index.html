@@ -141,8 +141,7 @@
 </div>
 
 <script>
-    if (typeof firebaseConfig === 'undefined') {
-        var firebaseConfig = window.envConfig = {
+    window.envConfig = {
     "apiKey": "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
     "authDomain": "voice-complaint.firebaseapp.com",
     "databaseURL': "https://voice-complaint-default-rtdb.firebaseio.com",
@@ -156,8 +155,6 @@
     "otpTemplate": "template_odmbb0m",
     "complaintTemplate": "template_q1m241f"
 };
-        {};
-    }
 
     let db;
 
@@ -177,19 +174,21 @@
     }
 
     function initFirebase() {
-        const configToUse = window.firebaseConfig || firebaseConfig;
+        const configToUse = (window.envConfig && window.envConfig.apiKey) ? window.envConfig : (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
 
         if (configToUse && configToUse.apiKey) {
             if (!firebase.apps.length) {
                 firebase.initializeApp(configToUse);
             }
             db = firebase.database();
-            if(configToUse.emailjsKey) {
-                emailjs.init(configToUse.emailjsKey);
+            
+            const ejsKey = configToUse.emailjsKey || configToUse.emailjs_user_id;
+            if(ejsKey && typeof emailjs !== 'undefined') {
+                emailjs.init(ejsKey);
             }
             console.log("Firebase initialized successfully.");
         } else {
-            console.warn("Firebase config not found. Navigation works, but database is off.");
+            console.error("Firebase config not found. Verify Secrets or config.js");
         }
     }
     
@@ -412,7 +411,7 @@
 
     async function submitFinalForm() {
         if (!db) {
-            Swal.fire('Error', 'Database not connected. Check Firebase configuration.', 'error');
+            Swal.fire('Error', 'Database not connected.', 'error');
             return;
         }
         const cid = "CP" + Math.random().toString(36).substr(2, 5).toUpperCase();
@@ -432,9 +431,13 @@
         };
 
         db.ref('complaints/' + cid).set(data).then(() => {
-            if (typeof emailjs !== 'undefined') {
-                const configToUse = window.firebaseConfig || firebaseConfig;
-                if (configToUse && configToUse.emailjsService && configToUse.complaintTemplate) {
+            const configToUse = (window.envConfig && window.envConfig.apiKey) ? window.envConfig : (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
+            
+            if (typeof emailjs !== 'undefined' && configToUse) {
+                const srv = configToUse.emailjsService || configToUse.emailjs_service_id;
+                const tmp = configToUse.complaintTemplate || configToUse.emailjs_template_id;
+                
+                if (srv && tmp) {
                     const templateParams = {
                         to_email: data.email,
                         user_name: data.name,
@@ -444,11 +447,8 @@
                         description: data.description
                     };
 
-                    emailjs.send(
-                        configToUse.emailjsService,
-                        configToUse.complaintTemplate,
-                        templateParams
-                    ).catch(err => console.error('Email failed:', err));
+                    emailjs.send(srv, tmp, templateParams)
+                    .catch(err => console.error('Email failed:', err));
                 }
             }
 
@@ -459,7 +459,7 @@
                 confirmButtonText: 'OK'
             }).then(() => window.location.reload());
         }).catch(err => {
-            Swal.fire('Database Error', 'Could not save complaint. Check Firebase rules.', 'error');
+            Swal.fire('Database Error', 'Check your Firebase rules.', 'error');
         });
     }
 </script>
