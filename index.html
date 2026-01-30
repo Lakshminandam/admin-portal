@@ -159,7 +159,6 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
 
     if (firebaseConfig && firebaseConfig.apiKey) { 
         firebase.initializeApp(firebaseConfig); 
-        
         if(firebaseConfig.emailjsKey) {
             emailjs.init(firebaseConfig.emailjsKey);
         }
@@ -196,13 +195,16 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
     recognition.lang = 'en-IN'; 
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
-    recognition.continuous = true;
+    recognition.continuous = false; 
 
     function loadVoices() {
         const voices = window.speechSynthesis.getVoices();
         femaleVoice = voices.find(v => (v.name.includes('Female') || v.name.includes('Google UK English Female') || v.name.includes('Microsoft Heera')) && v.lang.includes('en')) || voices[0];
     }
-    window.speechSynthesis.onvoiceschanged = loadVoices;
+    
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
     loadVoices();
 
     function getBestMatch(input, options) {
@@ -239,12 +241,10 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
 
     function refineVoiceInput(text, fieldId) {
         let cleanText = text.trim();
-        if (cleanText.endsWith('.')) {
-            cleanText = cleanText.slice(0, -1).trim();
-        }
+        if (cleanText.endsWith('.')) cleanText = cleanText.slice(0, -1).trim();
 
         if (fieldId === "field_email") {
-            return cleanText.toLowerCase().replace(/\s+/g, '').replace(/attherate/g, '@').replace(/atrate/g, '@').replace(/dot/g, '.').replace(/\s/g, '');
+            return cleanText.toLowerCase().replace(/\s+/g, '').replace(/attherate/g, '@').replace(/atrate/g, '@').replace(/dot/g, '.');
         }
         if (fieldId === "field_service" || fieldId === "field_mobile") return cleanText.replace(/\D/g, ''); 
         if (fieldId === "field_circle") return getBestMatch(cleanText, Object.keys(circleData));
@@ -273,11 +273,11 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
                 window.speechSynthesis.cancel();
                 btn.classList.replace('mic-on', 'mic-paused');
                 icon.className = "bi bi-play-fill";
-                document.getElementById('ai_status').innerText = "AI Paused Click Play to resume";
+                document.getElementById('ai_status').innerText = "AI Paused. Click Play to resume";
             } else {
                 btn.classList.replace('mic-paused', 'mic-on');
                 icon.className = "bi bi-pause-fill";
-                document.getElementById('ai_status').innerText = "Resuming";
+                document.getElementById('ai_status').innerText = "Resuming...";
                 askNextQuestion();
             }
         }
@@ -315,7 +315,7 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
 
                 recognition.onresult = (event) => {
                     if (isPaused) return;
-                    const text = event.results[event.results.length - 1][0].transcript.toLowerCase();
+                    const text = event.results[0][0].transcript.toLowerCase();
                     
                     if (text.includes("clear") || text.includes("reset")) {
                         clearInterval(timerCountdown);
@@ -332,12 +332,18 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
                     inputField.value = refineVoiceInput(text, q.id);
                     inputField.classList.remove('voice-active');
                     currentStep++;
-                    setTimeout(askNextQuestion, 600);
+                    setTimeout(askNextQuestion, 800);
+                };
+
+                recognition.onerror = (err) => {
+                    if (err.error === 'no-speech') {
+                        console.log("No speech detected, restarting step...");
+                    }
                 };
             });
         } else {
             document.getElementById('submitBtn').disabled = false;
-            document.getElementById('ai_status').innerText = "All details collected Submitting automatically";
+            document.getElementById('ai_status').innerText = "All details collected. Submitting...";
             speak("All details collected. Submitting your complaint now.", () => {
                 submitFinalForm();
             });
@@ -357,7 +363,7 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
                 if (timeLeft <= 0) {
                     clearInterval(timerCountdown);
                     recognition.stop();
-                    speak("Time out. I didn't hear anything Let's try that again.", askNextQuestion);
+                    speak("Time out. Let's try that again.", askNextQuestion);
                 }
             }
         }, 1000);
@@ -369,19 +375,26 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
         const msg = new SpeechSynthesisUtterance(text);
         if (!femaleVoice) loadVoices();
         msg.voice = femaleVoice;
-        msg.onend = callback;
+        msg.rate = 0.95; 
+        msg.onend = () => { if (callback) callback(); };
         window.speechSynthesis.speak(msg);
     }
 
     async function submitFinalForm() {
         const cid = "CP" + Math.random().toString(36).substr(2, 5).toUpperCase();
         const data = {
-            complaintId: cid, serviceNumber: document.getElementById('field_service').value,
-            name: document.getElementById('field_name').value, mobile: document.getElementById('field_mobile').value,
-            circle: document.getElementById('field_circle').value, division: document.getElementById('field_division').value,
-            email: document.getElementById('field_email').value, address: document.getElementById('field_address').value,
-            complaintType: document.getElementById('field_type').value, description: document.getElementById('field_complaint').value,
-            status: "Pending", timestamp: Date.now()
+            complaintId: cid, 
+            serviceNumber: document.getElementById('field_service').value,
+            name: document.getElementById('field_name').value, 
+            mobile: document.getElementById('field_mobile').value,
+            circle: document.getElementById('field_circle').value, 
+            division: document.getElementById('field_division').value,
+            email: document.getElementById('field_email').value, 
+            address: document.getElementById('field_address').value,
+            complaintType: document.getElementById('field_type').value, 
+            description: document.getElementById('field_complaint').value,
+            status: "Pending", 
+            timestamp: Date.now()
         };
 
         db.ref('complaints/' + cid).set(data).then(() => {
@@ -399,21 +412,28 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
                     firebaseConfig.emailjsService,
                     firebaseConfig.complaintTemplate,
                     templateParams
-                )
-                .then(() => console.log('Email Sent Successfully'))
-                .catch((err) => console.error('Email Failed:', err));
+                ).catch(err => console.error('Email failed:', err));
             }
 
             Swal.fire({
-                icon: 'success', title: 'Complaint Registered',
-                text: `Your Complaint ID is: ${cid}`, confirmButtonText: 'OK'
+                icon: 'Success', 
+                title: 'Complaint Registered',
+                text: `Your Complaint ID is: ${cid}`, 
+                confirmButtonText: 'OK'
             }).then(() => window.location.reload());
+        }).catch(err => {
+            Swal.fire('Database Error', 'Could not save complaint. Check Firebase rules.', 'error');
         });
     }
 
     function showPage(pageId) {
         document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
         document.getElementById(pageId).classList.add('active-page');
+        if (pageId !== 'complaint') {
+            aiActive = false;
+            window.speechSynthesis.cancel();
+            recognition.stop();
+        }
     }
 </script>
 </body>
