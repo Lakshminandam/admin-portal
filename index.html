@@ -219,11 +219,9 @@
 
         options.forEach(opt => {
             let similarity = getSimilarity(input, opt);
-            
             if (input.toLowerCase().includes(opt.toLowerCase().replace(' section','').replace(' division',''))) {
                 similarity += 0.5;
             }
-
             if (similarity > maxSimilarity) {
                 maxSimilarity = similarity;
                 bestMatch = opt;
@@ -235,7 +233,6 @@
 
     function refineVoiceInput(text, fieldId) {
         let cleanText = text.trim();
-        
         if (fieldId === "field_email") {
             return cleanText.toLowerCase()
                 .replace(/\s+/g, '')
@@ -244,19 +241,14 @@
                 .replace(/dot/g, '.')
                 .replace(/\s/g, '');
         }
-
         if (fieldId === "field_service" || fieldId === "field_mobile") return cleanText.replace(/\D/g, ''); 
-        
         if (fieldId === "field_circle") return getBestMatch(cleanText, Object.keys(circleData));
-        
         if (fieldId === "field_division") {
             const circle = document.getElementById('field_circle').value;
             const sections = circleData[circle] || [];
             return getBestMatch(cleanText, sections);
         }
-        
         if (fieldId === "field_type") return getBestMatch(cleanText, complaintTypes);
-        
         return cleanText.charAt(0).toUpperCase() + cleanText.slice(1);
     }
 
@@ -316,7 +308,8 @@
                 if (isPaused) return;
                 document.getElementById('ai_status').innerText = "Listening... (Speak Now)";
                 startTimer(q.id);
-                recognition.start();
+                
+                try { recognition.start(); } catch(e) {}
 
                 recognition.onresult = (event) => {
                     if (isPaused) return;
@@ -326,22 +319,19 @@
                     overlay.style.display = 'none';
                     
                     inputField.value = refineVoiceInput(text, q.id);
-                    
                     inputField.classList.remove('voice-active');
                     currentStep++;
                     setTimeout(askNextQuestion, 600);
                 };
+
                 recognition.onerror = (e) => {
-                    if (!isPaused) {
-                        recognition.stop();
-                        speak("I didn't catch that. Please try again.", askNextQuestion);
+                    if (e.error === 'no-speech') {
                     }
                 };
             });
         } else {
             document.getElementById('submitBtn').disabled = false;
             document.getElementById('ai_status').innerText = "All details collected. Submitting automatically...";
-            
             speak("All details collected. Submitting your complaint now.", () => {
                 submitFinalForm();
             });
@@ -360,7 +350,7 @@
                 if (timeLeft <= 0) {
                     clearInterval(timerCountdown);
                     recognition.stop();
-                    speak("Time out. Let's try again.", askNextQuestion);
+                    speak("Time out. I didn't hear anything. Let's try that again.", askNextQuestion);
                 }
             }
         }, 1000);
