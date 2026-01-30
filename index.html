@@ -197,7 +197,7 @@
     function getBestMatch(input, options) {
         if (!input) return "";
         let bestMatch = options[0];
-        let highestScore = 0;
+        let maxSimilarity = -1;
 
         const cleanInput = input.toLowerCase().replace(/\s/g, '');
 
@@ -205,34 +205,48 @@
             const cleanOpt = opt.toLowerCase().replace(/\s/g, '').replace('section', '').replace('division', '');
             
             let matches = 0;
-            const smallerLen = Math.min(cleanInput.length, cleanOpt.length);
-            for(let i=0; i<smallerLen; i++) {
+            const minLen = Math.min(cleanInput.length, cleanOpt.length);
+            for(let i=0; i<minLen; i++) {
                 if(cleanInput[i] === cleanOpt[i]) matches++;
             }
             
-            let score = matches / Math.max(cleanInput.length, cleanOpt.length);
+            let similarity = matches / Math.max(cleanInput.length, cleanOpt.length);
 
-            if (cleanOpt.includes(cleanInput) || cleanInput.includes(cleanOpt)) score += 0.5;
+            if (cleanOpt.includes(cleanInput) || cleanInput.includes(cleanOpt)) similarity += 0.4;
 
-            if (score > highestScore) {
-                highestScore = score;
+            if (similarity > maxSimilarity) {
+                maxSimilarity = similarity;
                 bestMatch = opt;
             }
         });
 
-        return highestScore > 0.3 ? bestMatch : input; 
+        return maxSimilarity > 0.4 ? bestMatch : options[0]; 
     }
 
     function refineVoiceInput(text, fieldId) {
         let cleanText = text.trim();
+        
+        if (fieldId === "field_email") {
+            return cleanText.toLowerCase()
+                .replace(/\s+/g, '')
+                .replace(/attherate/g, '@')
+                .replace(/atrate/g, '@')
+                .replace(/dot/g, '.')
+                .replace(/\s/g, '');
+        }
+
         if (fieldId === "field_service" || fieldId === "field_mobile") return cleanText.replace(/\D/g, ''); 
-        if (fieldId === "field_email") return cleanText.toLowerCase().replace(/\s+/g, '').replace(/attherate/g, '@').replace(/dot/g, '.');
+        
         if (fieldId === "field_circle") return getBestMatch(cleanText, Object.keys(circleData));
+        
         if (fieldId === "field_division") {
             const circle = document.getElementById('field_circle').value;
-            return getBestMatch(cleanText, circleData[circle] || []);
+            const sections = circleData[circle] || [];
+            return getBestMatch(cleanText, sections);
         }
+        
         if (fieldId === "field_type") return getBestMatch(cleanText, complaintTypes);
+        
         return cleanText.charAt(0).toUpperCase() + cleanText.slice(1);
     }
 
@@ -300,7 +314,9 @@
                     const text = event.results[0][0].transcript;
                     document.getElementById('timer_' + q.id).style.display = 'none';
                     overlay.style.display = 'none';
+                    
                     inputField.value = refineVoiceInput(text, q.id);
+                    
                     inputField.classList.remove('voice-active');
                     currentStep++;
                     setTimeout(askNextQuestion, 600);
