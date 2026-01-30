@@ -178,7 +178,7 @@
             <label class="form-label">Official Email</label>
             <div class="input-group-custom">
                 <i class="bi bi-envelope"></i>
-                <input type="email" id="email" class="form-control-custom" placeholder="Enter your email" value="admin@gmail.com">
+                <input type="email" id="email" class="form-control-custom" placeholder="Enter your email">
             </div>
         </div>
 
@@ -186,7 +186,7 @@
             <label class="form-label">Password</label>
             <div class="input-group-custom">
                 <i class="bi bi-lock"></i>
-                <input type="password" id="password" class="form-control-custom" placeholder="Enter password" value="admin123">
+                <input type="password" id="password" class="form-control-custom" placeholder="Enter password">
             </div>
         </div>
 
@@ -210,15 +210,12 @@
 </div>
 
 <script>
-    const firebaseConfig = // GITHUB_ACTION_PLACEHOLDER 
-    {};
+    var firebaseConfig = firebaseConfig || {};
 
     if (firebaseConfig && firebaseConfig.apiKey) {
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
-    } else {
-        console.error("Firebase configuration missing!");
     }
     
     const auth = firebase.auth();
@@ -256,7 +253,7 @@
         loginBtn.disabled = true;
 
         try {
-            const userCredential = await auth.signInWithEmailAndPassword(email, password);
+            await auth.signInWithEmailAndPassword(email, password);
             successRedirect();
         } catch (error) {
             if (email === "admin@gmail.com" && password === "admin123") {
@@ -269,6 +266,7 @@
                 let msg = "Invalid email or password";
                 if (error.code === 'auth/user-not-found') msg = "No account found with this email.";
                 if (error.code === 'auth/wrong-password') msg = "Incorrect password.";
+                if (error.code === 'auth/invalid-email') msg = "Please enter a valid email format.";
                 
                 Swal.fire('Login Failed', msg, 'error');
                 refreshCaptcha();
@@ -284,7 +282,7 @@
             timer: 1500,
             showConfirmButton: false
         }).then(() => {
-            window.location.href = 'dashboard.html';
+            window.location.replace('dashboard.html');
         });
     }
 </script>
