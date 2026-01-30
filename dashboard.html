@@ -133,14 +133,17 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// GITHUB_ACTION_PLACEHOLDER
+    const firebaseConfig = // GITHUB_ACTION_PLACEHOLDER
+    {};
+
     let auth, db, activeKey = null;
     const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
 
     function initFirebase() {
-        if (typeof firebaseConfig !== 'undefined') {
+        if (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey) {
             if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-            auth = firebase.auth(); db = firebase.database();
+            auth = firebase.auth(); 
+            db = firebase.database();
             setupAuthListener();
         }
     }
