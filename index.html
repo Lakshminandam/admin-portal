@@ -204,24 +204,34 @@ const firebaseConfig = {
     loadVoices();
 
     function getBestMatch(input, options) {
-        if (!input) return "";
+        if (!input) return options[0];
+        
+        const getBigrams = (str) => {
+            const s = str.toLowerCase().replace(/\s/g, '').replace('section', '').replace('division', '');
+            const bigrams = new Set();
+            for (let i = 0; i < s.length - 1; i++) bigrams.add(s.substring(i, i + 2));
+            return bigrams;
+        };
+
+        const getSimilarity = (str1, str2) => {
+            const pairs1 = getBigrams(str1);
+            const pairs2 = getBigrams(str2);
+            const union = pairs1.size + pairs2.size;
+            if (union === 0) return 0;
+            let intersection = 0;
+            pairs1.forEach(p => { if (pairs2.has(p)) intersection++; });
+            return (2.0 * intersection) / union;
+        };
+
         let bestMatch = options[0];
         let maxSimilarity = -1;
 
-        const cleanInput = input.toLowerCase().replace(/\s/g, '');
-
         options.forEach(opt => {
-            const cleanOpt = opt.toLowerCase().replace(/\s/g, '').replace('section', '').replace('division', '');
+            let similarity = getSimilarity(input, opt);
             
-            let matches = 0;
-            const minLen = Math.min(cleanInput.length, cleanOpt.length);
-            for(let i=0; i<minLen; i++) {
-                if(cleanInput[i] === cleanOpt[i]) matches++;
+            if (input.toLowerCase().includes(opt.toLowerCase().replace(' section','').replace(' division',''))) {
+                similarity += 0.5;
             }
-            
-            let similarity = matches / Math.max(cleanInput.length, cleanOpt.length);
-
-            if (cleanOpt.includes(cleanInput) || cleanInput.includes(cleanOpt)) similarity += 0.4;
 
             if (similarity > maxSimilarity) {
                 maxSimilarity = similarity;
@@ -229,7 +239,7 @@ const firebaseConfig = {
             }
         });
 
-        return maxSimilarity > 0.4 ? bestMatch : options[0]; 
+        return bestMatch; 
     }
 
     function refineVoiceInput(text, fieldId) {
