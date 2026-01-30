@@ -161,19 +161,21 @@
             auth = firebase.auth(); 
             db = firebase.database();
             
-            detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
+            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
             
+            detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
             setupAuthListener();
         } else {
-            console.error("Firebase Configuration is missing! Check your config.js file.");
+            console.error("Firebase Configuration is missing!");
             document.getElementById('complaintsTable').innerHTML = '<tr><td colspan="9" class="text-center py-4 text-danger">Configuration Error.</td></tr>';
         }
     }
 
     function setupAuthListener() {
         auth.onAuthStateChanged((user) => {
-            if (user) { 
-                document.getElementById('adminEmail').innerText = user.email;
+            const adminSession = sessionStorage.getItem('isAdmin');
+            if (user || adminSession === 'true') { 
+                document.getElementById('adminEmail').innerText = user ? user.email : "Administrator";
                 loadComplaints(); 
             } else { 
                 window.location.replace('admin.html'); 
@@ -182,6 +184,7 @@
     }
 
     function logout() { 
+        sessionStorage.removeItem('isAdmin'); 
         if(auth) {
             auth.signOut().finally(() => { 
                 window.location.replace('index.html'); 
@@ -306,6 +309,7 @@
             alert("Error updating status: " + err.message);
         });
     }
+    
     initFirebase();
 </script>
 </body>
