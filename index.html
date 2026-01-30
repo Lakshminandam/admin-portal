@@ -12,6 +12,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
     <style>
         :root { --primary: #003366; --accent: #FFD700; --bg: #f8fafc; }
         body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; }
@@ -41,7 +43,6 @@
         .btn-submit-full:hover:not(:disabled) { background-color: #0056b3; }
         .btn-submit-full:disabled { background-color: #a0cfff; cursor: not-allowed; opacity: 0.8; }
 
-        /* Watch Timer Styles */
         .timer-badge {
             position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
             background: #e63946; color: white; padding: 4px 12px; border-radius: 20px;
@@ -140,7 +141,7 @@
 </div>
 
 <script>
-{
+    const firebaseConfig = {
 apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
     "authDomain": "voice-complaint.firebaseapp.com",
     "databaseURL': "https://voice-complaint-default-rtdb.firebaseio.com",
@@ -154,7 +155,15 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
     "otpTemplate": "template_odmbb0m",
     "complaintTemplate": "template_q1m241f"
 }
-    if (typeof firebaseConfig !== 'undefined') { firebase.initializeApp(firebaseConfig); }
+    {};
+
+    if (firebaseConfig && firebaseConfig.apiKey) { 
+        firebase.initializeApp(firebaseConfig); 
+        
+        if(firebaseConfig.emailjsKey) {
+            emailjs.init(firebaseConfig.emailjsKey);
+        }
+    }
     const db = firebase.database();
 
     const circleData = {
@@ -374,7 +383,27 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
             complaintType: document.getElementById('field_type').value, description: document.getElementById('field_complaint').value,
             status: "Pending", timestamp: Date.now()
         };
+
         db.ref('complaints/' + cid).set(data).then(() => {
+            if (firebaseConfig.emailjsKey && firebaseConfig.emailjsService && firebaseConfig.complaintTemplate) {
+                const templateParams = {
+                    to_email: data.email,
+                    user_name: data.name,
+                    complaint_id: cid,
+                    service_number: data.serviceNumber,
+                    complaint_type: data.complaintType,
+                    description: data.description
+                };
+
+                emailjs.send(
+                    firebaseConfig.emailjsService,
+                    firebaseConfig.complaintTemplate,
+                    templateParams
+                )
+                .then(() => console.log('Email Sent Successfully'))
+                .catch((err) => console.error('Email Failed:', err));
+            }
+
             Swal.fire({
                 icon: 'success', title: 'Complaint Registered',
                 text: `Your Complaint ID is: ${cid}`, confirmButtonText: 'OK'
