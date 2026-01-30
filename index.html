@@ -31,20 +31,15 @@
         .complaint-table td { padding: 12px 20px; border: 1px solid #dee2e6; vertical-align: middle; }
         .label-cell { background-color: #ffffff; font-weight: bold; width: 35%; text-align: right; color: #333; }
         .input-cell { width: 65%; position: relative; }
-        .form-control { background-color: #ffffff !important; border: 1px solid #ced4da; padding: 8px; width: 100%; }
+        .form-control { background-color: #ffffff !important; border: 1px solid #ced4da; padding: 8px; width: 85%; display: inline-block; }
+
+        .clear-btn { background: none; border: none; color: #dc3545; cursor: pointer; font-size: 1.2rem; vertical-align: middle; margin-left: 5px; visibility: hidden; }
+        .visible-clear { visibility: visible; }
 
         .submit-btn-container { width: 100%; margin-top: -1px; }
         .btn-submit-full {
-            width: 100%;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 12px;
-            font-size: 1.2rem;
-            font-weight: 500;
-            border-radius: 0 0 8px 8px;
-            transition: background 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 100%; background-color: #007bff; color: white; border: none; padding: 12px;
+            font-size: 1.2rem; font-weight: 500; border-radius: 0 0 8px 8px; transition: background 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .btn-submit-full:hover:not(:disabled) { background-color: #0056b3; }
         .btn-submit-full:disabled { background-color: #a0cfff; cursor: not-allowed; opacity: 0.8; }
@@ -67,21 +62,13 @@
         .ai-text-display { font-size: 1.1rem; font-weight: 500; font-style: italic; color: #FFD700; }
         
         .mic-btn { 
-            background: #3f51b5; color: white; border: none; 
-            width: 70px; height: 70px; border-radius: 50%; 
-            font-size: 1.8rem; transition: all 0.3s ease;
-            display: flex; align-items: center; justify-content: center;
+            background: #3f51b5; color: white; border: none; width: 70px; height: 70px; border-radius: 50%; 
+            font-size: 1.8rem; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;
         }
-        
         .mic-on { animation: pulse-blue 1.5s infinite; background: #007bff; }
         .mic-paused { background: #e63946 !important; }
 
-        @keyframes pulse-blue {
-            0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); }
-            70% { box-shadow: 0 0 0 20px rgba(0, 123, 255, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
-        }
-
+        @keyframes pulse-blue { 0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(0, 123, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
@@ -109,8 +96,8 @@
 
 <div id="home" class="page-content active-page">
     <header class="hero text-center container shadow">
-        <h1 class="display-3 fw-bold">Powering Progress, <br>Hearing Grievances.</h1>
-        <p class="lead mt-3">Smart, voice-activated solutions for electrical infrastructure management.</p>
+        <h1 class="display-3 fw-bold">Powering Progress, <br>Hearing Grievances</h1>
+        <p class="lead mt-3">Smart, voice-activated solutions for electrical infrastructure management</p>
     </header>
 </div>
 
@@ -126,15 +113,15 @@
                 </div>
 
                 <table class="complaint-table">
-                    <tr><td class="label-cell">Service Number</td><td class="input-cell"><input type="text" id="field_service" class="form-control" readonly><span class="timer-badge" id="timer_field_service">30s</span></td></tr>
-                    <tr><td class="label-cell">Name</td><td class="input-cell"><input type="text" id="field_name" class="form-control" readonly><span class="timer-badge" id="timer_field_name">30s</span></td></tr>
-                    <tr><td class="label-cell">Mobile Number</td><td class="input-cell"><input type="text" id="field_mobile" class="form-control" readonly maxlength="10"><span class="timer-badge" id="timer_field_mobile">30s</span></td></tr>
-                    <tr><td class="label-cell">Circle</td><td class="input-cell"><input type="text" id="field_circle" class="form-control" readonly><span class="timer-badge" id="timer_field_circle">30s</span></td></tr>
-                    <tr><td class="label-cell">Division/Section</td><td class="input-cell"><input type="text" id="field_division" class="form-control" readonly><span class="timer-badge" id="timer_field_division">30s</span></td></tr>
-                    <tr><td class="label-cell">Email ID</td><td class="input-cell"><input type="text" id="field_email" class="form-control" readonly><span class="timer-badge" id="timer_field_email">30s</span></td></tr>
-                    <tr><td class="label-cell">Address</td><td class="input-cell"><textarea id="field_address" class="form-control" rows="2" readonly></textarea><span class="timer-badge" id="timer_field_address">30s</span></td></tr>
-                    <tr><td class="label-cell">Complaint Type</td><td class="input-cell"><input type="text" id="field_type" class="form-control" readonly><span class="timer-badge" id="timer_field_type">30s</span></td></tr>
-                    <tr><td class="label-cell">Complaint</td><td class="input-cell"><textarea class="form-control" id="field_complaint" rows="4" readonly></textarea><span class="timer-badge" id="timer_field_complaint">30s</span></td></tr>
+                    <tr><td class="label-cell">Service Number</td><td class="input-cell"><input type="text" id="field_service" class="form-control" readonly><button class="clear-btn" id="clear_field_service" onclick="clearField('field_service')"><i class="bi bi-trash3-fill"></i></button><span class="timer-badge" id="timer_field_service">30s</span></td></tr>
+                    <tr><td class="label-cell">Name</td><td class="input-cell"><input type="text" id="field_name" class="form-control" readonly><button class="clear-btn" id="clear_field_name" onclick="clearField('field_name')"><i class="bi bi-trash3-fill"></i></button><span class="timer-badge" id="timer_field_name">30s</span></td></tr>
+                    <tr><td class="label-cell">Mobile Number</td><td class="input-cell"><input type="text" id="field_mobile" class="form-control" readonly maxlength="10"><button class="clear-btn" id="clear_field_mobile" onclick="clearField('field_mobile')"><i class="bi bi-trash3-fill"></i></button><span class="timer-badge" id="timer_field_mobile">30s</span></td></tr>
+                    <tr><td class="label-cell">Circle</td><td class="input-cell"><input type="text" id="field_circle" class="form-control" readonly><button class="clear-btn" id="clear_field_circle" onclick="clearField('field_circle')"><i class="bi bi-trash3-fill"></i></button><span class="timer-badge" id="timer_field_circle">30s</span></td></tr>
+                    <tr><td class="label-cell">Division/Section</td><td class="input-cell"><input type="text" id="field_division" class="form-control" readonly><button class="clear-btn" id="clear_field_division" onclick="clearField('field_division')"><i class="bi bi-trash3-fill"></i></button><span class="timer-badge" id="timer_field_division">30s</span></td></tr>
+                    <tr><td class="label-cell">Email ID</td><td class="input-cell"><input type="text" id="field_email" class="form-control" readonly><button class="clear-btn" id="clear_field_email" onclick="clearField('field_email')"><i class="bi bi-trash3-fill"></i></button><span class="timer-badge" id="timer_field_email">30s</span></td></tr>
+                    <tr><td class="label-cell">Address</td><td class="input-cell"><textarea id="field_address" class="form-control" rows="2" readonly></textarea><button class="clear-btn" id="clear_field_address" onclick="clearField('field_address')"><i class="bi bi-trash3-fill"></i></button><span class="timer-badge" id="timer_field_address">30s</span></td></tr>
+                    <tr><td class="label-cell">Complaint Type</td><td class="input-cell"><input type="text" id="field_type" class="form-control" readonly><button class="clear-btn" id="clear_field_type" onclick="clearField('field_type')"><i class="bi bi-trash3-fill"></i></button><span class="timer-badge" id="timer_field_type">30s</span></td></tr>
+                    <tr><td class="label-cell">Complaint</td><td class="input-cell"><textarea class="form-control" id="field_complaint" rows="4" readonly></textarea><button class="clear-btn" id="clear_field_complaint" onclick="clearField('field_complaint')"><i class="bi bi-trash3-fill"></i></button><span class="timer-badge" id="timer_field_complaint">30s</span></td></tr>
                 </table>
                 <div class="submit-btn-container">
                     <button class="btn-submit-full shadow" id="submitBtn" onclick="submitFinalForm()" disabled>Submit</button>
@@ -165,15 +152,15 @@
     const complaintTypes = ["Billing", "Line", "Pole", "SC Wire", "Supply Failure", "Transformer", "Voltage", "Incident"];
 
     const questions = [
-        { id: "field_service", prompt: "Tell me your service number." },
-        { id: "field_name", prompt: "Tell me your full name." },
-        { id: "field_mobile", prompt: "Please provide your 10 digit mobile number." },
-        { id: "field_circle", prompt: "Which circle? Vijayawada, Guntur, or Prakasam.", options: Object.keys(circleData) },
+        { id: "field_service", prompt: "Tell me your service number" },
+        { id: "field_name", prompt: "Tell me your full name" },
+        { id: "field_mobile", prompt: "Please provide your 10 digit mobile number" },
+        { id: "field_circle", prompt: "Which circle? Vijayawada, Guntur, or Prakasam", options: Object.keys(circleData) },
         { id: "field_division", prompt: "" },
-        { id: "field_email", prompt: "Tell me your email address." },
-        { id: "field_address", prompt: "What is your address?" },
-        { id: "field_type", prompt: "Choose category: Billing, Line, Pole, SC Wire, Supply Failure, Transformer, Voltage, or Incident.", options: complaintTypes },
-        { id: "field_complaint", prompt: "Describe your electricity complaint in detail." }
+        { id: "field_email", prompt: "Tell me your email address" },
+        { id: "field_address", prompt: "What is your address" },
+        { id: "field_type", prompt: "Choose category: Billing, Line, Pole, SC Wire, Supply Failure, Transformer, Voltage, or Incident", options: complaintTypes },
+        { id: "field_complaint", prompt: "Describe your electricity complaint in detail" }
     ];
 
     let currentStep = 0;
@@ -186,6 +173,7 @@
     recognition.lang = 'en-IN'; 
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
+    recognition.continuous = true;
 
     function loadVoices() {
         const voices = window.speechSynthesis.getVoices();
@@ -194,16 +182,25 @@
     window.speechSynthesis.onvoiceschanged = loadVoices;
     loadVoices();
 
+    function clearField(fieldId) {
+        document.getElementById(fieldId).value = "";
+        document.getElementById('clear_' + fieldId).classList.remove('visible-clear');
+        if(aiActive) {
+            currentStep = questions.findIndex(q => q.id === fieldId);
+            recognition.stop();
+            clearInterval(timerCountdown);
+            askNextQuestion();
+        }
+    }
+
     function getBestMatch(input, options) {
         if (!input) return options[0];
-        
         const getBigrams = (str) => {
             const s = str.toLowerCase().replace(/\s/g, '').replace('section', '').replace('division', '');
             const bigrams = new Set();
             for (let i = 0; i < s.length - 1; i++) bigrams.add(s.substring(i, i + 2));
             return bigrams;
         };
-
         const getSimilarity = (str1, str2) => {
             const pairs1 = getBigrams(str1);
             const pairs2 = getBigrams(str2);
@@ -213,10 +210,8 @@
             pairs1.forEach(p => { if (pairs2.has(p)) intersection++; });
             return (2.0 * intersection) / union;
         };
-
         let bestMatch = options[0];
         let maxSimilarity = -1;
-
         options.forEach(opt => {
             let similarity = getSimilarity(input, opt);
             if (input.toLowerCase().includes(opt.toLowerCase().replace(' section','').replace(' division',''))) {
@@ -227,19 +222,13 @@
                 bestMatch = opt;
             }
         });
-
         return bestMatch; 
     }
 
     function refineVoiceInput(text, fieldId) {
         let cleanText = text.trim();
         if (fieldId === "field_email") {
-            return cleanText.toLowerCase()
-                .replace(/\s+/g, '')
-                .replace(/attherate/g, '@')
-                .replace(/atrate/g, '@')
-                .replace(/dot/g, '.')
-                .replace(/\s/g, '');
+            return cleanText.toLowerCase().replace(/\s+/g, '').replace(/attherate/g, '@').replace(/atrate/g, '@').replace(/dot/g, '.').replace(/\s/g, '');
         }
         if (fieldId === "field_service" || fieldId === "field_mobile") return cleanText.replace(/\D/g, ''); 
         if (fieldId === "field_circle") return getBestMatch(cleanText, Object.keys(circleData));
@@ -255,7 +244,6 @@
     function toggleVoiceAI() {
         const btn = document.getElementById('voiceBtn');
         const icon = document.getElementById('micIcon');
-
         if (!aiActive) {
             aiActive = true;
             isPaused = false;
@@ -269,11 +257,11 @@
                 window.speechSynthesis.cancel();
                 btn.classList.replace('mic-on', 'mic-paused');
                 icon.className = "bi bi-play-fill";
-                document.getElementById('ai_status').innerText = "AI Paused. Click Play to resume.";
+                document.getElementById('ai_status').innerText = "AI Paused Click Play to resume";
             } else {
                 btn.classList.replace('mic-paused', 'mic-on');
                 icon.className = "bi bi-pause-fill";
-                document.getElementById('ai_status').innerText = "Resuming...";
+                document.getElementById('ai_status').innerText = "Resuming";
                 askNextQuestion();
             }
         }
@@ -281,7 +269,6 @@
 
     function askNextQuestion() {
         if (isPaused) return;
-
         if (currentStep < questions.length) {
             const q = questions[currentStep];
             const inputField = document.getElementById(q.id);
@@ -291,7 +278,7 @@
             if (q.id === "field_division") {
                 const circle = document.getElementById('field_circle').value;
                 const options = circleData[circle] || [];
-                q.prompt = `Under ${circle} Circle, select one section: ${options.join(", ")}.`;
+                q.prompt = `Under ${circle} Circle, select one section: ${options.join(", ")}`;
                 listContent.innerHTML = options.map(opt => `<div class="option-item">${opt}</div>`).join('');
                 overlay.style.display = 'block';
             } else if (q.options) {
@@ -306,33 +293,38 @@
             
             speak(q.prompt, () => {
                 if (isPaused) return;
-                document.getElementById('ai_status').innerText = "Listening... (Speak Now)";
+                document.getElementById('ai_status').innerText = "Listening (Speak Now)";
                 startTimer(q.id);
-                
                 try { recognition.start(); } catch(e) {}
 
                 recognition.onresult = (event) => {
                     if (isPaused) return;
+                    const text = event.results[event.results.length - 1][0].transcript.toLowerCase();
+                    
+                    if (text.includes("clear") || text.includes("reset")) {
+                        clearInterval(timerCountdown);
+                        recognition.stop();
+                        inputField.value = "";
+                        document.getElementById('clear_' + q.id).classList.remove('visible-clear');
+                        speak("Field cleared Please tell me again", askNextQuestion);
+                        return;
+                    }
+
                     clearInterval(timerCountdown);
-                    const text = event.results[0][0].transcript;
+                    recognition.stop();
                     document.getElementById('timer_' + q.id).style.display = 'none';
                     overlay.style.display = 'none';
-                    
                     inputField.value = refineVoiceInput(text, q.id);
+                    document.getElementById('clear_' + q.id).classList.add('visible-clear');
                     inputField.classList.remove('voice-active');
                     currentStep++;
                     setTimeout(askNextQuestion, 600);
                 };
-
-                recognition.onerror = (e) => {
-                    if (e.error === 'no-speech') {
-                    }
-                };
             });
         } else {
             document.getElementById('submitBtn').disabled = false;
-            document.getElementById('ai_status').innerText = "All details collected. Submitting automatically...";
-            speak("All details collected. Submitting your complaint now.", () => {
+            document.getElementById('ai_status').innerText = "All details collected Submitting automatically";
+            speak("All details collected Submitting your complaint now", () => {
                 submitFinalForm();
             });
         }
@@ -350,7 +342,7 @@
                 if (timeLeft <= 0) {
                     clearInterval(timerCountdown);
                     recognition.stop();
-                    speak("Time out. I didn't hear anything. Let's try that again.", askNextQuestion);
+                    speak("Time out I didn't hear anything Let's try that again", askNextQuestion);
                 }
             }
         }, 1000);
@@ -369,25 +361,17 @@
     async function submitFinalForm() {
         const cid = "CP" + Math.random().toString(36).substr(2, 5).toUpperCase();
         const data = {
-            complaintId: cid,
-            serviceNumber: document.getElementById('field_service').value,
-            name: document.getElementById('field_name').value,
-            mobile: document.getElementById('field_mobile').value,
-            circle: document.getElementById('field_circle').value,
-            division: document.getElementById('field_division').value,
-            email: document.getElementById('field_email').value,
-            address: document.getElementById('field_address').value,
-            complaintType: document.getElementById('field_type').value,
-            description: document.getElementById('field_complaint').value,
-            status: "Pending",
-            timestamp: Date.now()
+            complaintId: cid, serviceNumber: document.getElementById('field_service').value,
+            name: document.getElementById('field_name').value, mobile: document.getElementById('field_mobile').value,
+            circle: document.getElementById('field_circle').value, division: document.getElementById('field_division').value,
+            email: document.getElementById('field_email').value, address: document.getElementById('field_address').value,
+            complaintType: document.getElementById('field_type').value, description: document.getElementById('field_complaint').value,
+            status: "Pending", timestamp: Date.now()
         };
         db.ref('complaints/' + cid).set(data).then(() => {
             Swal.fire({
-                icon: 'success',
-                title: 'Complaint Registered!',
-                text: `Your Complaint ID is: ${cid}`,
-                confirmButtonText: 'OK'
+                icon: 'success', title: 'Complaint Registered',
+                text: `Your Complaint ID is: ${cid}`, confirmButtonText: 'OK'
             }).then(() => window.location.reload());
         });
     }
