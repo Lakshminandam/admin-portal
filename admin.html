@@ -210,12 +210,12 @@
 </div>
 
 <script>
-    var firebaseConfig = firebaseConfig || {};
-
-    if (firebaseConfig && firebaseConfig.apiKey) {
+    if (typeof firebaseConfig!== 'undefined') {
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
+    }else{
+        console.error("firebaseConfig not found! Make sure config.js is correct.");
     }
     
     const auth = firebase.auth();
