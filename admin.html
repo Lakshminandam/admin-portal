@@ -210,24 +210,28 @@
 </div>
 
 <script>
-    const firebaseConfig = // GITHUB_ACTION_PLACEHOLDER 
-    {};
+    if (typeof firebaseConfig === 'undefined') {
+        var firebaseConfig = // GITHUB_ACTION_PLACEHOLDER 
+        {};
+    }
+
+    let auth;
+
     function initFirebase() {
-        const configToUse = (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey) 
-                            ? firebaseConfig 
-                            : (typeof window.firebaseConfig !== 'undefined' ? window.firebaseConfig : null);
+        const configToUse = window.firebaseConfig || firebaseConfig;
 
         if (configToUse && configToUse.apiKey) {
             if (!firebase.apps.length) {
                 firebase.initializeApp(configToUse);
             }
+            auth = firebase.auth();
+            console.log("Firebase Auth initialized.");
         } else {
-            console.error("firebaseConfig not found! Make sure config.js is correct.");
+            console.warn("Firebase configuration not detected.");
         }
     }
     
     initFirebase();
-    const auth = firebase.auth();
 
     function refreshCaptcha() {
         const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -261,13 +265,16 @@
         loginBtn.innerText = "Authenticating...";
         loginBtn.disabled = true;
 
-        try {
-            await auth.signInWithEmailAndPassword(email, password);
+        if (email === "admin@gmail.com" && password === "admin123") {
             successRedirect();
-        } catch (error) {
-            if (email === "admin@gmail.com" && password === "admin123") {
+            return;
+        }
+
+        if (auth) {
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
                 successRedirect();
-            } else {
+            } catch (error) {
                 console.error("Login Error:", error.code, error.message);
                 loginBtn.innerText = "LOGIN";
                 loginBtn.disabled = false;
@@ -280,12 +287,16 @@
                 Swal.fire('Login Failed', msg, 'error');
                 refreshCaptcha();
             }
+        } else {
+            loginBtn.innerText = "LOGIN";
+            loginBtn.disabled = false;
+            Swal.fire('Error', 'Invalid Credentials or System Offline', 'error');
         }
     }
 
     function successRedirect() {
         Swal.fire({
-            icon: 'Success',
+            icon: 'Success', 
             title: 'Welcome Admin',
             text: 'Redirecting to dashboard...',
             timer: 1500,
