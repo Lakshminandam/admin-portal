@@ -210,14 +210,23 @@
 </div>
 
 <script>
-    if (typeof firebaseConfig!== 'undefined') {
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+    const firebaseConfig = // GITHUB_ACTION_PLACEHOLDER 
+    {};
+    function initFirebase() {
+        const configToUse = (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey) 
+                            ? firebaseConfig 
+                            : (typeof window.firebaseConfig !== 'undefined' ? window.firebaseConfig : null);
+
+        if (configToUse && configToUse.apiKey) {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(configToUse);
+            }
+        } else {
+            console.error("firebaseConfig not found! Make sure config.js is correct.");
         }
-    }else{
-        console.error("firebaseConfig not found! Make sure config.js is correct.");
     }
     
+    initFirebase();
     const auth = firebase.auth();
 
     function refreshCaptcha() {
@@ -276,7 +285,7 @@
 
     function successRedirect() {
         Swal.fire({
-            icon: 'success',
+            icon: 'Success',
             title: 'Welcome Admin',
             text: 'Redirecting to dashboard...',
             timer: 1500,
