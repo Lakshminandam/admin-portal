@@ -155,19 +155,21 @@
         const configToUse = (window.envConfig && window.envConfig.apiKey) ? window.envConfig : (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
 
         if (configToUse && configToUse.apiKey) {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(configToUse);
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(configToUse);
+                }
+                auth = firebase.auth(); 
+                db = firebase.database();
+                
+                detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
+                setupAuthListener();
+            } catch (e) {
+                console.error("Firebase Init Error:", e);
             }
-            auth = firebase.auth(); 
-            db = firebase.database();
-            
-            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-            
-            detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
-            setupAuthListener();
         } else {
             console.error("Firebase Configuration is missing!");
-            document.getElementById('complaintsTable').innerHTML = '<tr><td colspan="9" class="text-center py-4 text-danger">Configuration Error.</td></tr>';
+            document.getElementById('complaintsTable').innerHTML = '<tr><td colspan="9" class="text-center py-4 text-danger">Configuration Error. Check config.js</td></tr>';
         }
     }
 
@@ -186,8 +188,10 @@
     function logout() { 
         sessionStorage.removeItem('isAdmin'); 
         if(auth) {
-            auth.signOut().finally(() => { 
+            auth.signOut().then(() => { 
                 window.location.replace('index.html'); 
+            }).catch(() => {
+                window.location.replace('index.html');
             });
         } else {
             window.location.replace('index.html');
@@ -203,7 +207,9 @@
     }
 
     function loadComplaints() {
+        if (!db) return;
         const tableBody = document.getElementById('complaintsTable');
+        
         db.ref('complaints').on('value', (snapshot) => {
             tableBody.innerHTML = '';
             let counts = { pending: 0, progress: 0, resolved: 0, reopened: 0 };
@@ -221,10 +227,22 @@
                 const p = (data.priority || 'Medium').toUpperCase();
                 
                 let bClass = 'bg-pending';
-                if (status === 'in progress') { counts.progress++; bClass = 'bg-inprogress'; }
-                else if (status === 'resolved') { counts.resolved++; bClass = 'bg-resolved'; }
-                else if (status === 'reopened' || status === 're-opened') { counts.reopened++; bClass = 'bg-reopened'; }
-                else { counts.pending++; bClass = 'bg-pending'; }
+                if (status === 'in progress' || status === 'inprogress') { 
+                    counts.progress++; 
+                    bClass = 'bg-inprogress'; 
+                }
+                else if (status === 'resolved') { 
+                    counts.resolved++; 
+                    bClass = 'bg-resolved'; 
+                }
+                else if (status === 'reopened' || status === 're-opened') { 
+                    counts.reopened++; 
+                    bClass = 'bg-reopened'; 
+                }
+                else { 
+                    counts.pending++; 
+                    bClass = 'bg-pending'; 
+                }
 
                 const pColor = p === 'HIGH' ? '#dc3545' : (p === 'LOW' ? '#2e7d32' : '#f57c00');
                 const sectionDisplay = data.division || data.section || 'N/A';
@@ -245,6 +263,7 @@
             updateCounts(counts);
         }, (error) => {
             console.error("Database Read Error:", error);
+            tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-danger">Database access denied. Check Firebase Rules.</td></tr>';
         });
     }
 
@@ -264,6 +283,8 @@
             
             document.getElementById('modalTitle').innerText = "Details for ID: " + (d.complaintId || key);
             document.getElementById('officerRemarks').value = d.officer_remarks || "";
+            
+            // Logic to show/hide action buttons based on status
             document.getElementById('startWorkBtn').style.display = (status === 'pending' || isReopened) ? 'block' : 'none';
             document.getElementById('resolveBtn').style.display = (status !== 'resolved') ? 'block' : 'none';
 
@@ -291,7 +312,9 @@
     }
 
     function updateStatus(newStatus) {
+        if (!activeKey) return;
         const remarks = document.getElementById('officerRemarks').value.trim();
+        
         if (newStatus === 'resolved' && remarks === "") { 
             alert("Please provide officer remarks before resolving."); 
             return; 
@@ -308,8 +331,7 @@
         }).catch((err) => {
             alert("Error updating status: " + err.message);
         });
-    }
-    
+    }    
     initFirebase();
 </script>
 </body>
