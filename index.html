@@ -141,15 +141,30 @@
 </div>
 
 <script>
-    const firebaseConfig = // GITHUB_ACTION_PLACEHOLDER
-    {};
+    if (typeof firebaseConfig === 'undefined') {
+        var firebaseConfig = // GITHUB_ACTION_PLACEHOLDER
+        {};
+    }
 
     let db;
 
+    function showPage(pageId) {
+        document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
+        const targetPage = document.getElementById(pageId);
+        if (targetPage) {
+            targetPage.classList.add('active-page');
+        }
+        if (pageId !== 'complaint') {
+            aiActive = false;
+            window.speechSynthesis.cancel();
+            if (typeof recognition !== 'undefined') {
+                try { recognition.stop(); } catch(e) {}
+            }
+        }
+    }
+
     function initFirebase() {
-        const configToUse = (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey) 
-                            ? firebaseConfig 
-                            : (typeof window.firebaseConfig !== 'undefined' ? window.firebaseConfig : null);
+        const configToUse = window.firebaseConfig || firebaseConfig;
 
         if (configToUse && configToUse.apiKey) {
             if (!firebase.apps.length) {
@@ -159,8 +174,9 @@
             if(configToUse.emailjsKey) {
                 emailjs.init(configToUse.emailjsKey);
             }
+            console.log("Firebase initialized successfully.");
         } else {
-            console.warn("Firebase config not found. Database features will be disabled.");
+            console.warn("Firebase config not found. Navigation works, but database is off.");
         }
     }
     
@@ -404,7 +420,7 @@
 
         db.ref('complaints/' + cid).set(data).then(() => {
             if (typeof emailjs !== 'undefined') {
-                const configToUse = (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey) ? firebaseConfig : window.firebaseConfig;
+                const configToUse = window.firebaseConfig || firebaseConfig;
                 if (configToUse && configToUse.emailjsService && configToUse.complaintTemplate) {
                     const templateParams = {
                         to_email: data.email,
@@ -432,19 +448,6 @@
         }).catch(err => {
             Swal.fire('Database Error', 'Could not save complaint. Check Firebase rules.', 'error');
         });
-    }
-
-    function showPage(pageId) {
-        document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
-        const targetPage = document.getElementById(pageId);
-        if (targetPage) {
-            targetPage.classList.add('active-page');
-        }
-        if (pageId !== 'complaint') {
-            aiActive = false;
-            window.speechSynthesis.cancel();
-            recognition.stop();
-        }
     }
 </script>
 </body>
