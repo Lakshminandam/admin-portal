@@ -13,7 +13,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-
     <style>
         :root { --primary: #003366; --accent: #FFD700; --bg: #f8fafc; }
         body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; }
@@ -139,12 +138,9 @@
         </div>
     </div>
 </div>
-
 <script>
     // GITHUB_ACTION_PLACEHOLDER
-
     let db;
-
     function showPage(pageId) {
         document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
         const targetPage = document.getElementById(pageId);
@@ -161,21 +157,25 @@
     }
 
     function initFirebase() {
-        const configToUse = (window.envConfig && window.envConfig.apiKey) ? window.envConfig : (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
+        let configToUse = window.envConfig || window.firebaseConfig || (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
 
         if (configToUse && configToUse.apiKey) {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(configToUse);
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(configToUse);
+                }
+                db = firebase.database();
+                
+                const ejsKey = configToUse.emailjsKey || configToUse.emailjs_user_id;
+                if(ejsKey && typeof emailjs !== 'undefined') {
+                    emailjs.init(ejsKey);
+                }
+                console.log("Firebase initialized successfully.");
+            } catch (e) {
+                console.error("Firebase Init Error:", e);
             }
-            db = firebase.database();
-            
-            const ejsKey = configToUse.emailjsKey || configToUse.emailjs_user_id;
-            if(ejsKey && typeof emailjs !== 'undefined') {
-                emailjs.init(ejsKey);
-            }
-            console.log("Firebase initialized successfully.");
         } else {
-            console.error("Firebase config not found. Verify Secrets or config.js");
+            console.error("Firebase config not found. Verify config.js is in the same folder as index.html");
         }
     }
     
@@ -207,11 +207,15 @@
     let aiActive = false;
     let femaleVoice = null;
 
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = 'en-IN'; 
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.continuous = false; 
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition;
+    if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'en-IN'; 
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        recognition.continuous = false; 
+    }
 
     function loadVoices() {
         const voices = window.speechSynthesis.getVoices();
@@ -274,6 +278,10 @@
     }
 
     function toggleVoiceAI() {
+        if (!SpeechRecognition) {
+            Swal.fire('Error', 'Voice recognition not supported in this browser.', 'error');
+            return;
+        }
         const btn = document.getElementById('voiceBtn');
         const icon = document.getElementById('micIcon');
         if (!aiActive) {
@@ -353,7 +361,8 @@
 
                 recognition.onerror = (err) => {
                     if (err.error === 'no-speech') {
-                        console.log("No speech detected, restarting step...");
+                        recognition.stop();
+                        setTimeout(() => { if(!isPaused) recognition.start(); }, 1000);
                     }
                 };
             });
@@ -418,7 +427,7 @@
         };
 
         db.ref('complaints/' + cid).set(data).then(() => {
-            const configToUse = (window.envConfig && window.envConfig.apiKey) ? window.envConfig : (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
+            let configToUse = window.envConfig || window.firebaseConfig || (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
             
             if (typeof emailjs !== 'undefined' && configToUse) {
                 const srv = configToUse.emailjsService || configToUse.emailjs_service_id;
@@ -440,12 +449,13 @@
             }
 
             Swal.fire({
-                icon: 'Success', 
+                icon: 'success', 
                 title: 'Complaint Registered',
                 text: `Your Complaint ID is: ${cid}`, 
                 confirmButtonText: 'OK'
             }).then(() => window.location.reload());
         }).catch(err => {
+            console.error(err);
             Swal.fire('Database Error', 'Check your Firebase rules.', 'error');
         });
     }
