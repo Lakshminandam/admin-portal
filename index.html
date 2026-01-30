@@ -142,7 +142,7 @@
 
 <script>
     if (typeof firebaseConfig === 'undefined') {
-        var firebaseConfig = {
+        var firebaseConfig = window.envConfig = {
     "apiKey": "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
     "authDomain": "voice-complaint.firebaseapp.com",
     "databaseURL': "https://voice-complaint-default-rtdb.firebaseio.com",
@@ -155,7 +155,7 @@
     "emailjsService": "service_vu4qks5",
     "otpTemplate": "template_odmbb0m",
     "complaintTemplate": "template_q1m241f"
-}
+};
         {};
     }
 
