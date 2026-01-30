@@ -14,7 +14,7 @@
     <style>
         :root { --primary: #003366; --accent: #FFD700; --bg: #f1f5f9; --teal-dark: #00695c; }
         body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; }
-        .sidebar { background: var(--primary); min-height: 100vh; color: white; padding-top: 20px; position: fixed; width: inherit; }
+        .sidebar { background: var(--primary); min-height: 100vh; color: white; padding-top: 20px; position: fixed; width: inherit; z-index: 100; }
         .nav-link { color: rgba(255,255,255,0.8); transition: 0.3s; margin: 5px 15px; border-radius: 8px; text-decoration: none; display: block; padding: 10px; }
         .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.1); color: white; }
         .main-content { padding: 30px; margin-left: 16.666667%; }
@@ -35,7 +35,7 @@
         
         .reopen-box { background: #fff5f5; padding: 12px; border: 1px solid #feb2b2; border-left: 4px solid #f56565; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; }
         
-        .priority-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; text-wrap: nowrap; }
+        .priority-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; white-space: nowrap; }
 
         .btn-start { background-color: #ef6c00; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
         .btn-resolve { background-color: #2e7d32; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
@@ -51,7 +51,7 @@
         .col-priority { width: 10%; }
         .col-status { width: 10%; }
 
-        @media (max-width: 768px) { .sidebar { position: relative; min-height: auto; } .main-content { margin-left: 0; } }
+        @media (max-width: 768px) { .sidebar { position: relative; min-height: auto; width: 100%; } .main-content { margin-left: 0; } }
     </style>
 </head>
 <body>
@@ -154,10 +154,14 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
 
     function initFirebase() {
         if (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey) {
-            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
             auth = firebase.auth(); 
             db = firebase.database();
             setupAuthListener();
+        } else {
+            console.error("Firebase Configuration is missing!");
         }
     }
 
@@ -173,8 +177,11 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
     }
 
     function formatTime(ts) {
-        if (!ts) return "Not available";
-        return new Date(ts).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+        if (!ts) return "Recently";
+        return new Date(ts).toLocaleString('en-IN', { 
+            day: '2-digit', month: 'short', year: 'numeric', 
+            hour: '2-digit', minute: '2-digit', hour12: true 
+        });
     }
 
     function loadComplaints() {
@@ -183,10 +190,17 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
             tableBody.innerHTML = '';
             let counts = { pending: 0, progress: 0, resolved: 0, reopened: 0 };
             
+            if (!snapshot.exists()) {
+                tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No grievances found.</td></tr>';
+                updateCounts(counts);
+                return;
+            }
+
             snapshot.forEach((child) => {
                 const data = child.val();
                 const key = child.key;
                 const status = (data.status || 'pending').toLowerCase();
+                
                 const p = (data.priority || 'Medium').toUpperCase();
                 
                 let bClass = 'bg-pending';
@@ -197,6 +211,8 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
 
                 const pColor = p === 'HIGH' ? '#dc3545' : (p === 'LOW' ? '#2e7d32' : '#f57c00');
 
+                const sectionDisplay = data.division || data.section || 'N/A';
+
                 tableBody.innerHTML += `
                     <tr onclick="viewDetail('${key}')" style="cursor: pointer;">
                         <td class="ps-4 fw-bold text-primary text-nowrap">${data.complaintId || key.substring(0,6)}</td>
@@ -204,18 +220,22 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
                         <td class="text-nowrap">${data.mobile || 'N/A'}</td>
                         <td class="text-nowrap">${data.serviceNumber || 'N/A'}</td>
                         <td>${data.circle || 'N/A'}</td>
-                        <td>${data.section || 'N/A'}</td>
+                        <td>${sectionDisplay}</td>
                         <td><small class="text-muted">${data.complaintType || 'N/A'}</small></td>
                         <td><span class="priority-tag" style="background: ${pColor}15; color: ${pColor}; border: 1px solid ${pColor}">${p}</span></td>
                         <td><span class="status-badge ${bClass}">${status}</span></td>
                     </tr>`;
             });
 
-            document.getElementById('pendingCount').innerText = counts.pending;
-            document.getElementById('progressCount').innerText = counts.progress;
-            document.getElementById('resolvedCount').innerText = counts.resolved;
-            document.getElementById('reopenedCount').innerText = counts.reopened;
+            updateCounts(counts);
         });
+    }
+
+    function updateCounts(counts) {
+        document.getElementById('pendingCount').innerText = counts.pending;
+        document.getElementById('progressCount').innerText = counts.progress;
+        document.getElementById('resolvedCount').innerText = counts.resolved;
+        document.getElementById('reopenedCount').innerText = counts.reopened;
     }
 
     function viewDetail(key) {
@@ -228,11 +248,13 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
             document.getElementById('modalTitle').innerText = "Details for ID: " + (d.complaintId || key);
             
             const defaultSentence = "Officer has acknowledged and started work on this grievance.";
-            document.getElementById('officerRemarks').value = d.officer_remarks || defaultSentence;
+            document.getElementById('officerRemarks').value = d.officer_remarks || "";
             document.getElementById('officerRemarks').disabled = false; 
 
             document.getElementById('startWorkBtn').style.display = (status === 'pending' || isReopened) ? 'block' : 'none';
             document.getElementById('resolveBtn').style.display = (status !== 'resolved') ? 'block' : 'none';
+
+            const sectionDisplay = d.division || d.section || 'N/A';
 
             let html = `
                 <div class="row">
@@ -240,16 +262,18 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
                         <div class="detail-item"><i class="bi bi-person-fill"></i><span><strong>Citizen:</strong> ${d.name || 'N/A'}</span></div>
                         <div class="detail-item"><i class="bi bi-telephone-fill"></i><span><strong>Mobile:</strong> ${d.mobile || 'N/A'}</span></div>
                         <div class="detail-item"><i class="bi bi-lightning-charge-fill"></i><span><strong>Service No:</strong> ${d.serviceNumber || 'N/A'}</span></div>
+                        <div class="detail-item"><i class="bi bi-envelope-at"></i><span><strong>Email:</strong> ${d.email || 'N/A'}</span></div>
                     </div>
                     <div class="col-md-6 ps-md-4">
-                        <div class="detail-item"><i class="bi bi-geo-alt-fill"></i><span><strong>Circle/Section:</strong> ${d.circle || 'N/A'} / ${d.section || 'N/A'}</span></div>
-                        <div class="detail-item"><i class="bi bi-calendar-check"></i><span><strong>Registered:</strong> ${formatTime(d.createdAt || d.timestamp)}</span></div>
+                        <div class="detail-item"><i class="bi bi-geo-alt-fill"></i><span><strong>Circle / Section:</strong> ${d.circle || 'N/A'} / ${sectionDisplay}</span></div>
+                        <div class="detail-item"><i class="bi bi-calendar-check"></i><span><strong>Registered:</strong> ${formatTime(d.timestamp || d.createdAt)}</span></div>
                         <div class="detail-item"><i class="bi bi-tag-fill"></i><span><strong>Type:</strong> ${d.complaintType || 'N/A'}</span></div>
                     </div>
                 </div>
                 <hr>
                 <div class="detail-item"><i class="bi bi-exclamation-triangle-fill"></i><span><strong>Priority:</strong> <span class="badge" style="background-color: ${d.priority === 'High' ? '#dc3545' : '#6c757d'}">${d.priority || 'Medium'}</span></span></div>
                 <div class="description-box"><strong>Grievance Description:</strong><br>${d.description || "N/A"}</div>
+                <div class="description-box bg-light"><strong>Address:</strong><br>${d.address || "N/A"}</div>
             `;
 
             if (isReopened && d.reopen_reason) {
@@ -267,13 +291,27 @@ apiKey: "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
             alert("Please provide resolution remarks before resolving.");
             return;
         }
-        let updates = { status: newStatus, officer_remarks: remarks };
+        
+        let updates = { 
+            status: newStatus, 
+            officer_remarks: remarks 
+        };
+        
         if (newStatus === 'in progress') updates['work_started_at'] = firebase.database.ServerValue.TIMESTAMP;
         if (newStatus === 'resolved') updates['resolved_at'] = firebase.database.ServerValue.TIMESTAMP;
-        db.ref('complaints/' + activeKey).update(updates).then(() => { detailsModal.hide(); }).catch((error) => { alert("Error updating status: " + error.message); });
+        
+        db.ref('complaints/' + activeKey).update(updates).then(() => { 
+            detailsModal.hide(); 
+        }).catch((error) => { 
+            alert("Error updating status: " + error.message); 
+        });
     }
 
-    function logout() { auth.signOut().then(() => { window.location.href = 'index.html'; }); }
+    function logout() { 
+        auth.signOut().then(() => { 
+            window.location.href = 'index.html'; 
+        }); 
+    }
     initFirebase();
 </script>
 </body>
