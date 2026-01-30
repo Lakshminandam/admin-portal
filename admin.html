@@ -24,6 +24,7 @@
             align-items: center;
             justify-content: center;
             font-family: 'Segoe UI', sans-serif;
+            margin: 0;
         }
 
         .login-modal {
@@ -51,6 +52,7 @@
             padding: 10px 20px;
             position: relative;
             font-size: 1.2rem; 
+            text-decoration: none;
         }
         .nav-link.active {
             color: var(--primary) !important;
@@ -84,7 +86,7 @@
             z-index: 10;
         }
 
-        .form-label { font-weight: 700; color: #334155; font-size: 0.85rem; margin-bottom: 8px; }
+        .form-label { font-weight: 700; color: #334155; font-size: 0.85rem; margin-bottom: 8px; display: block; }
 
         .form-control-custom {
             background-color: #f8fafc;
@@ -94,6 +96,7 @@
             width: 100%;
             transition: all 0.3s;
             color: #1e293b;
+            box-sizing: border-box;
         }
 
         .form-control-custom:focus {
@@ -142,6 +145,7 @@
             border-radius: 12px;
             font-weight: 700;
             transition: 0.3s;
+            cursor: pointer;
         }
         .btn-login:hover { background: #1d4ed8; transform: translateY(-2px); }
 
@@ -153,6 +157,7 @@
             border-radius: 12px;
             font-weight: 700;
             transition: 0.3s;
+            cursor: pointer;
         }
         .btn-close-custom:hover { background: #fef2f2; }
 
@@ -197,7 +202,7 @@
                 <input type="text" id="captchaInput" class="form-control-custom" placeholder="Verify Captcha">
             </div>
             <div class="d-flex align-items-center justify-content-center">
-                <div class="captcha-box" id="captcha">F83HD</div>
+                <div class="captcha-box" id="captcha">-----</div>
                 <i class="bi bi-arrow-clockwise refresh-btn" onclick="refreshCaptcha()"></i>
             </div>
         </div>
@@ -228,17 +233,24 @@
     let auth;
 
     function initFirebase() {
-        const configToUse = (window.envConfig && window.envConfig.apiKey) ? window.envConfig : (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
+        const configToUse = (window.envConfig && window.envConfig.apiKey) 
+                            ? window.envConfig 
+                            : (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
 
         if (configToUse && configToUse.apiKey) {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(configToUse);
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(configToUse);
+                }
+                auth = firebase.auth();
+                auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+                console.log("Firebase Auth initialized successfully.");
+            } catch (e) {
+                console.error("Firebase Init Error:", e);
             }
-            auth = firebase.auth();
-            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-            console.log("Firebase Auth initialized.");
         } else {
-            console.error("Firebase configuration missing.");
+            console.error("Firebase configuration missing. Check config.js");
+            Swal.fire('Configuration Error', 'Firebase credentials not found.', 'error');
         }
     }
     
@@ -296,6 +308,7 @@
                 if (error.code === 'auth/user-not-found') msg = "No account found with this email.";
                 if (error.code === 'auth/wrong-password') msg = "Incorrect password.";
                 if (error.code === 'auth/invalid-email') msg = "Please enter a valid email format.";
+                if (error.code === 'auth/network-request-failed') msg = "Network error. Check your connection.";
                 
                 Swal.fire('Login Failed', msg, 'error');
                 refreshCaptcha();
@@ -303,7 +316,7 @@
         } else {
             loginBtn.innerText = "LOGIN";
             loginBtn.disabled = false;
-            Swal.fire('Error', 'Firebase system is offline.', 'error');
+            Swal.fire('Error', 'Authentication service is not ready.', 'error');
         }
     }
 
@@ -312,7 +325,7 @@
             icon: 'success', 
             title: 'Welcome Admin',
             text: 'Redirecting to dashboard...',
-            timer: 1000,
+            timer: 1500,
             showConfirmButton: false
         }).then(() => {
             window.location.replace('dashboard.html');
