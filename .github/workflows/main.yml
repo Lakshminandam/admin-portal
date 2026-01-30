@@ -19,11 +19,9 @@ jobs:
         env:
           FB_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
         run: |
-          export SECRET_DATA="${FB_CONFIG}"
-          
-          perl -i -pe 's|// GITHUB_ACTION_PLACEHOLDER|$ENV{SECRET_DATA}|g' index.html
-          perl -i -pe 's|// GITHUB_ACTION_PLACEHOLDER|$ENV{SECRET_DATA}|g' admin.html
-          perl -i -pe 's|// GITHUB_ACTION_PLACEHOLDER|$ENV{SECRET_DATA}|g' dashboard.html
+          perl -i -pe "s|// GITHUB_ACTION_PLACEHOLDER|window.envConfig = $FB_CONFIG;|g" index.html
+          perl -i -pe "s|// GITHUB_ACTION_PLACEHOLDER|window.envConfig = $FB_CONFIG;|g" admin.html
+          perl -i -pe "s|// GITHUB_ACTION_PLACEHOLDER|window.envConfig = $FB_CONFIG;|g" dashboard.html
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
