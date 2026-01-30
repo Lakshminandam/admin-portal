@@ -210,15 +210,12 @@
 </div>
 
 <script>
-    if (typeof firebaseConfig === 'undefined') {
-        var firebaseConfig = // GITHUB_ACTION_PLACEHOLDER 
-        {};
-    }
+    // GITHUB_ACTION_PLACEHOLDER
 
     let auth;
 
     function initFirebase() {
-        const configToUse = window.firebaseConfig || firebaseConfig;
+        const configToUse = (window.envConfig && window.envConfig.apiKey) ? window.envConfig : (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
 
         if (configToUse && configToUse.apiKey) {
             if (!firebase.apps.length) {
@@ -227,7 +224,7 @@
             auth = firebase.auth();
             console.log("Firebase Auth initialized.");
         } else {
-            console.warn("Firebase configuration not detected.");
+            console.error("Firebase configuration missing.");
         }
     }
     
@@ -290,7 +287,7 @@
         } else {
             loginBtn.innerText = "LOGIN";
             loginBtn.disabled = false;
-            Swal.fire('Error', 'Invalid Credentials or System Offline', 'error');
+            Swal.fire('Error', 'Firebase system is offline.', 'error');
         }
     }
 
