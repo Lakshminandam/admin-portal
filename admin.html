@@ -24,11 +24,12 @@
             align-items: center;
             justify-content: center;
             font-family: 'Segoe UI', sans-serif;
+            margin: 0;
         }
 
         .login-modal {
             background: white;
-            width: 100%;
+            width: 90%;
             max-width: 450px;
             border-radius: 24px;
             overflow: hidden;
@@ -94,6 +95,7 @@
             width: 100%;
             transition: all 0.3s;
             color: #1e293b;
+            box-sizing: border-box;
         }
 
         .form-control-custom:focus {
@@ -142,6 +144,7 @@
             border-radius: 12px;
             font-weight: 700;
             transition: 0.3s;
+            cursor: pointer;
         }
         .btn-login:hover { background: #1d4ed8; transform: translateY(-2px); }
 
@@ -153,6 +156,7 @@
             border-radius: 12px;
             font-weight: 700;
             transition: 0.3s;
+            cursor: pointer;
         }
         .btn-close-custom:hover { background: #fef2f2; }
 
@@ -197,7 +201,7 @@
                 <input type="text" id="captchaInput" class="form-control-custom" placeholder="Verify Captcha">
             </div>
             <div class="d-flex align-items-center justify-content-center">
-                <div class="captcha-box" id="captcha">F83HD</div>
+                <div class="captcha-box" id="captcha">-----</div>
                 <i class="bi bi-arrow-clockwise refresh-btn" onclick="refreshCaptcha()"></i>
             </div>
         </div>
@@ -224,25 +228,25 @@
     "otpTemplate": "template_odmbb0m",
     "complaintTemplate": "template_q1m241f"
 };
-
     let auth;
-
     function initFirebase() {
         const configToUse = (window.envConfig && window.envConfig.apiKey) ? window.envConfig : (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
 
         if (configToUse && configToUse.apiKey) {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(configToUse);
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(configToUse);
+                }
+                auth = firebase.auth();
+                auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+                console.log("Firebase Auth initialized.");
+            } catch (e) {
+                console.error("Firebase Error:", e);
             }
-            auth = firebase.auth();
-            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-            console.log("Firebase Auth initialized.");
         } else {
-            console.error("Firebase configuration missing.");
+            console.error("Firebase configuration missing. Check config.js");
         }
     }
-    
-    initFirebase();
 
     function refreshCaptcha() {
         const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -252,8 +256,6 @@
         }
         document.getElementById('captcha').innerText = newCaptcha;
     }
-
-    window.onload = refreshCaptcha;
 
     async function handleLogin() {
         const email = document.getElementById('email').value.trim();
@@ -275,6 +277,7 @@
 
         loginBtn.innerText = "Authenticating...";
         loginBtn.disabled = true;
+
         if (auth) {
             try {
                 await auth.signInWithEmailAndPassword(email, password);
@@ -285,10 +288,8 @@
                 loginBtn.innerText = "LOGIN";
                 loginBtn.disabled = false;
                 
-                let msg = "Invalid email or password";
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                    msg = "Invalid official email or password.";
-                } else if (error.code === 'auth/invalid-email') {
+                let msg = "Invalid official email or password.";
+                if (error.code === 'auth/invalid-email') {
                     msg = "Please enter a valid email format.";
                 } else if (error.code === 'auth/too-many-requests') {
                     msg = "Access blocked due to many failed attempts. Try again later.";
@@ -300,7 +301,7 @@
         } else {
             loginBtn.innerText = "LOGIN";
             loginBtn.disabled = false;
-            Swal.fire('Error', 'Firebase system is offline.', 'error');
+            Swal.fire('Error', 'Authentication system is offline.', 'error');
         }
     }
 
@@ -309,12 +310,17 @@
             icon: 'success', 
             title: 'Welcome Admin',
             text: 'Redirecting to dashboard...',
-            timer: 1000,
+            timer: 1500,
             showConfirmButton: false
         }).then(() => {
             window.location.replace('dashboard.html');
         });
     }
+
+    window.onload = function() {
+        initFirebase();
+        refreshCaptcha();
+    };
 </script>
 
 </body>
