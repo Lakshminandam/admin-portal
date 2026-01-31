@@ -296,8 +296,8 @@
         let statusFoot = "";
         
         if (status === 'in progress') {
-            statusMsg = `Your complaint regarding ${data.complaintType} has been successfully registered and assigned to our team.`;
-            statusFoot = "Our team will look into this shortly.";
+            statusMsg = `Your complaint regarding ${data.complaintType} is now being processed.`;
+            statusFoot = "Our technical team has been assigned and is currently working to resolve the issue.";
         } else if (status === 'resolved') {
             statusMsg = `Your complaint regarding ${data.complaintType} has been successfully Resolved.`;
             statusFoot = "Thank you for your patience. This ticket is now closed.";
@@ -355,3 +355,5 @@
 </script>
 </body>
 </html>
+
+
