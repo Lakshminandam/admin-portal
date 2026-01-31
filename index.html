@@ -141,7 +141,7 @@
 
 <script>
 // GITHUB_ACTION_PLACEHOLDER
-    let db;
+    let db, auth;
     let userEmailFromUrl = "";
     let currentStep = 0;
     let timerCountdown;
@@ -169,18 +169,7 @@
     }
 
     function initFirebase() {
-        const urlParams = new URLSearchParams(window.location.search);
-        userEmailFromUrl = urlParams.get('email') || "";
-
-        if (userEmailFromUrl) {
-            const emailBox = document.getElementById('field_email');
-            if(emailBox) {
-                emailBox.value = decodeURIComponent(userEmailFromUrl);
-                showPage('complaint');
-            }
-        }
-
-        let configToUse = window.envConfig || window.firebaseConfig || (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
+        const configToUse = window.envConfig || window.firebaseConfig || (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
 
         if (configToUse && configToUse.apiKey) {
             try {
@@ -188,15 +177,27 @@
                     firebase.initializeApp(configToUse);
                 }
                 db = firebase.database();
+                auth = firebase.auth();
                 
                 const ejsKey = configToUse.emailjsKey || configToUse.emailjs_user_id;
                 if(ejsKey && typeof emailjs !== 'undefined') {
                     emailjs.init(ejsKey);
                 }
-                console.log("Firebase initialized.");
+                auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);                
+                console.log("Firebase & EmailJS Initialized Successfully.");                
+                const urlParams = new URLSearchParams(window.location.search);
+                userEmailFromUrl = urlParams.get('email') || "";
+                if (userEmailFromUrl) {
+                    const emailBox = document.getElementById('field_email');
+                    if(emailBox) emailBox.value = decodeURIComponent(userEmailFromUrl);
+                    showPage('complaint');
+                }
             } catch (e) {
                 console.error("Firebase Init Error:", e);
             }
+        } else {
+            console.warn("Config not detected, retrying in 500ms...");
+            setTimeout(initFirebase, 500);
         }
     }
 
@@ -342,9 +343,11 @@
                 q.prompt = `Under ${circle} Circle, select one section: ${options.join(", ")}`;
                 listContent.innerHTML = options.map(opt => `<div class="option-item">${opt}</div>`).join('');
                 overlay.style.display = 'block';
+                document.getElementById('overlay-title').innerText = "Select Section";
             } else if (q.options) {
                 listContent.innerHTML = q.options.map(opt => `<div class="option-item">${opt}</div>`).join('');
                 overlay.style.display = 'block';
+                document.getElementById('overlay-title').innerText = "Select Type";
             } else {
                 overlay.style.display = 'none';
             }
@@ -398,6 +401,7 @@
 
     function startTimer(fieldId) {
         const badge = document.getElementById('timer_' + fieldId);
+        if(!badge) return;
         const textSpan = badge.querySelector('.t-val');
         badge.style.display = 'flex';
         let timeLeft = 30;
@@ -428,9 +432,15 @@
 
     async function submitFinalForm() {
         if (!db) {
-            Swal.fire('Error', 'Database not connected. Please check your configuration.', 'error');
+            Swal.fire('Error', 'Database not connected. Retrying...', 'error');
+            initFirebase();
             return;
         }
+        
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Submitting...";
+
         const cid = "CP" + Math.random().toString(36).substr(2, 5).toUpperCase();
         const data = {
             complaintId: cid, 
@@ -448,11 +458,10 @@
         };
 
         db.ref('complaints/' + cid).set(data).then(() => {
-            let configToUse = window.envConfig || window.firebaseConfig || (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
-            
-            if (typeof emailjs !== 'undefined' && configToUse) {
-                const srv = configToUse.emailjsService || configToUse.emailjs_service_id;
-                const tmp = configToUse.complaintTemplate || configToUse.emailjs_template_id;
+            const config = window.envConfig || window.firebaseConfig || (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);            
+            if (typeof emailjs !== 'undefined' && config) {
+                const srv = config.emailjsService || config.emailjs_service_id;
+                const tmp = config.complaintTemplate || config.emailjs_template_id;
                 
                 if (srv && tmp) {
                     const templateParams = {
@@ -479,7 +488,9 @@
             });
         }).catch(err => {
             console.error(err);
-            Swal.fire('Database Error', 'Check your Firebase rules.', 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Submit";
+            Swal.fire('Database Error', 'Could not save complaint. Check your connection.', 'error');
         });
     }
 
