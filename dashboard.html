@@ -7,6 +7,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -285,6 +287,43 @@
         });
     }
 
+    function sendStatusEmail(data, status, remarks) {
+        const config = window.envConfig || window.firebaseConfig || (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
+        
+        emailjs.init(config.emailjsKey_2 || config.emailjsKey);
+
+        let statusMsg = "";
+        let statusFoot = "";
+        
+        if (status === 'in progress') {
+            statusMsg = `Your complaint regarding ${data.complaintType} has been successfully registered and assigned to our team.`;
+            statusFoot = "Our team will look into this shortly.";
+        } else if (status === 'resolved') {
+            statusMsg = `Your complaint regarding ${data.complaintType} has been successfully Resolved.`;
+            statusFoot = "Thank you for your patience. This ticket is now closed.";
+        }
+
+        const templateParams = {
+            to_email: data.email, 
+            user_name: data.name,
+            complaint_type: data.complaintType,
+            complaint_id: data.complaintId || activeKey.substring(0,8),
+            service_number: data.serviceNumber,
+            description: data.description,
+            status_label: status.toUpperCase(),
+            status_message: statusMsg,
+            status_footer: statusFoot,
+            remarks: remarks || "No specific remarks provided."
+        };
+
+        const serviceID = config.emailjsService_2 || config.emailjsService;
+        const templateID = config.updateTemplate_2 || config.complaintTemplate;
+
+        emailjs.send(serviceID, templateID, templateParams)
+            .then(() => console.log("Notification email sent!"))
+            .catch((err) => console.error("Email failed:", err));
+    }
+
     function updateStatus(newStatus) {
         const remarks = document.getElementById('officerRemarks').value.trim();
         if (newStatus === 'resolved' && remarks === "") { 
@@ -298,10 +337,17 @@
             updatedAt: firebase.database.ServerValue.TIMESTAMP
         };
         
-        db.ref('complaints/' + activeKey).update(updates).then(() => { 
-            detailsModal.hide(); 
-        }).catch((err) => {
-            alert("Error updating status: " + err.message);
+        db.ref('complaints/' + activeKey).once('value').then((snap) => {
+            const complaintData = snap.val();
+            
+            db.ref('complaints/' + activeKey).update(updates).then(() => { 
+                if (complaintData && complaintData.email) {
+                    sendStatusEmail(complaintData, newStatus, remarks);
+                }
+                detailsModal.hide(); 
+            }).catch((err) => {
+                alert("Error updating status: " + err.message);
+            });
         });
     }
     
