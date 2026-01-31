@@ -139,8 +139,10 @@
     </div>
 </div>
 <script>
-    // GITHUB_ACTION_PLACEHOLDER
+// GITHUB_ACTION_PLACEHOLDER
     let db;
+    let userEmailFromUrl = "";
+
     function showPage(pageId) {
         document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
         const targetPage = document.getElementById(pageId);
@@ -157,6 +159,9 @@
     }
 
     function initFirebase() {
+        const urlParams = new URLSearchParams(window.location.search);
+        userEmailFromUrl = urlParams.get('email') || "";
+
         let configToUse = window.envConfig || window.firebaseConfig || (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
 
         if (configToUse && configToUse.apiKey) {
@@ -170,12 +175,10 @@
                 if(ejsKey && typeof emailjs !== 'undefined') {
                     emailjs.init(ejsKey);
                 }
-                console.log("Firebase initialized successfully.");
+                console.log("Firebase initialized.");
             } catch (e) {
                 console.error("Firebase Init Error:", e);
             }
-        } else {
-            console.error("Firebase config not found. Verify config.js is in the same folder as index.html");
         }
     }
     
@@ -312,6 +315,7 @@
         if (currentStep < questions.length) {
             const q = questions[currentStep];
             const inputField = document.getElementById(q.id);
+            
             const overlay = document.getElementById('options-overlay');
             const listContent = document.getElementById('options-list-content');
 
@@ -448,12 +452,20 @@
                 }
             }
 
+            if (window.Toaster) {
+                window.Toaster.postMessage("completed");
+            } else if (window.parent) {
+                window.parent.postMessage("completed", "*");
+            }
+
             Swal.fire({
                 icon: 'success', 
                 title: 'Complaint Registered',
                 text: `Your Complaint ID is: ${cid}`, 
                 confirmButtonText: 'OK'
-            }).then(() => window.location.reload());
+            }).then(() => {
+                showPage('home');
+            });
         }).catch(err => {
             console.error(err);
             Swal.fire('Database Error', 'Check your Firebase rules.', 'error');
