@@ -139,9 +139,14 @@
     </div>
 </div>
 <script>
-    // GITHUB_ACTION_PLACEHOLDER
+ // GITHUB_ACTION_PLACEHOLDER
     let db;
     let userEmailFromUrl = "";
+    let currentStep = 0;
+    let timerCountdown;
+    let isPaused = false;
+    let aiActive = false;
+    let femaleVoice = null;
 
     function showPage(pageId) {
         document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active-page'));
@@ -163,6 +168,14 @@
     function initFirebase() {
         const urlParams = new URLSearchParams(window.location.search);
         userEmailFromUrl = urlParams.get('email') || "";
+
+        if (userEmailFromUrl) {
+            const emailBox = document.getElementById('field_email');
+            if(emailBox) {
+                emailBox.value = decodeURIComponent(userEmailFromUrl);
+                showPage('complaint');
+            }
+        }
 
         let configToUse = window.envConfig || window.firebaseConfig || (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
 
@@ -207,12 +220,6 @@
         { id: "field_type", prompt: "Choose category: Billing, Line, Pole, SC Wire, Supply Failure, Transformer, Voltage, or Incident", options: complaintTypes },
         { id: "field_complaint", prompt: "Describe your electricity complaint in detail" }
     ];
-
-    let currentStep = 0;
-    let timerCountdown;
-    let isPaused = false;
-    let aiActive = false;
-    let femaleVoice = null;
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition;
@@ -319,8 +326,14 @@
         if (isPaused) return;
         if (currentStep < questions.length) {
             const q = questions[currentStep];
-            const inputField = document.getElementById(q.id);
             
+            if (q.id === "field_email" && document.getElementById('field_email').value !== "") {
+                currentStep++;
+                askNextQuestion();
+                return;
+            }
+
+            const inputField = document.getElementById(q.id);
             const overlay = document.getElementById('options-overlay');
             const listContent = document.getElementById('options-list-content');
 
