@@ -139,7 +139,7 @@
     </div>
 </div>
 <script>
-// GITHUB_ACTION_PLACEHOLDER
+    // GITHUB_ACTION_PLACEHOLDER
     let db;
     let userEmailFromUrl = "";
 
@@ -151,7 +151,9 @@
         }
         if (pageId !== 'complaint') {
             aiActive = false;
-            window.speechSynthesis.cancel();
+            if (typeof window.speechSynthesis !== 'undefined') {
+                window.speechSynthesis.cancel();
+            }
             if (typeof recognition !== 'undefined') {
                 try { recognition.stop(); } catch(e) {}
             }
@@ -179,6 +181,8 @@
             } catch (e) {
                 console.error("Firebase Init Error:", e);
             }
+        } else {
+            console.warn("Firebase configuration not found. Please check config.js.");
         }
     }
     
@@ -221,11 +225,12 @@
     }
 
     function loadVoices() {
+        if (typeof window.speechSynthesis === 'undefined') return;
         const voices = window.speechSynthesis.getVoices();
         femaleVoice = voices.find(v => (v.name.includes('Female') || v.name.includes('Google UK English Female') || v.name.includes('Microsoft Heera')) && v.lang.includes('en')) || voices[0];
     }
     
-    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+    if (typeof window.speechSynthesis !== 'undefined' && window.speechSynthesis.onvoiceschanged !== undefined) {
         window.speechSynthesis.onvoiceschanged = loadVoices;
     }
     loadVoices();
@@ -399,7 +404,7 @@
     }
 
     function speak(text, callback) {
-        if (isPaused) return;
+        if (isPaused || typeof window.speechSynthesis === 'undefined') return;
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(text);
         if (!femaleVoice) loadVoices();
@@ -411,7 +416,7 @@
 
     async function submitFinalForm() {
         if (!db) {
-            Swal.fire('Error', 'Database not connected.', 'error');
+            Swal.fire('Error', 'Database not connected. Please check your configuration.', 'error');
             return;
         }
         const cid = "CP" + Math.random().toString(36).substr(2, 5).toUpperCase();
