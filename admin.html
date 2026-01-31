@@ -231,15 +231,7 @@ const firebaseConfig = {
   };
     let auth;
     function initFirebase() {
-        let configToUse = null;
-        
-        if (window.envConfig && window.envConfig.apiKey) {
-            configToUse = window.envConfig;
-        } else if (typeof firebaseConfig !== 'undefined') {
-            configToUse = firebaseConfig;
-        } else if (window.firebaseConfig) {
-            configToUse = window.firebaseConfig;
-        }
+        let configToUse = window.envConfig || window.firebaseConfig || (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
 
         if (configToUse && configToUse.apiKey) {
             try {
@@ -247,13 +239,14 @@ const firebaseConfig = {
                     firebase.initializeApp(configToUse);
                 }
                 auth = firebase.auth();
-                auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+                auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
                 console.log("Firebase Auth initialized.");
             } catch (e) {
                 console.error("Firebase Initialization Error:", e);
             }
         } else {
-            console.error("Firebase configuration missing. Ensure config.js is correct.");
+            console.warn("Config not found yet, retrying...");
+            setTimeout(initFirebase, 500);
         }
     }
 
@@ -285,7 +278,8 @@ const firebaseConfig = {
         }
 
         if (!auth) {
-            Swal.fire('Error', 'Authentication system is offline. Check console.', 'error');
+            Swal.fire('Error', 'System initializing. Please wait a moment.', 'info');
+            initFirebase();
             return;
         }
 
@@ -294,6 +288,7 @@ const firebaseConfig = {
 
         try {
             await auth.signInWithEmailAndPassword(email, password);
+            // Backup indicator for dashboard access
             sessionStorage.setItem('isAdmin', 'true');
             
             Swal.fire({
@@ -303,7 +298,7 @@ const firebaseConfig = {
                 timer: 1500,
                 showConfirmButton: false
             }).then(() => {
-                window.location.replace('dashboard.html');
+                window.location.href = 'dashboard.html';
             });
 
         } catch (error) {
@@ -316,7 +311,7 @@ const firebaseConfig = {
                 msg = "Please enter a valid email format.";
             } else if (error.code === 'auth/too-many-requests') {
                 msg = "Access blocked due to many failed attempts. Try again later.";
-            } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+            } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
                 msg = "Incorrect credentials. Please try again.";
             }
             
