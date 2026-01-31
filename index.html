@@ -155,7 +155,6 @@ const firebaseConfig = {
     complaintTemplate: "template_q1m241f"
   };
     let db, auth;
-    let userEmailFromUrl = "";
     let currentStep = 0;
     let timerCountdown;
     let isPaused = false;
@@ -198,13 +197,6 @@ const firebaseConfig = {
                 }
                 auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);                
                 console.log("Firebase & EmailJS Initialized Successfully.");                
-                
-                const urlParams = new URLSearchParams(window.location.search);
-                userEmailFromUrl = urlParams.get('email') || "";
-                if (userEmailFromUrl) {
-                    const emailBox = document.getElementById('field_email');
-                    if(emailBox) emailBox.value = decodeURIComponent(userEmailFromUrl);
-                }
             } catch (e) {
                 console.error("Firebase Init Error:", e);
             }
@@ -340,12 +332,6 @@ const firebaseConfig = {
         if (currentStep < questions.length) {
             const q = questions[currentStep];
             
-            if (q.id === "field_email" && document.getElementById('field_email').value !== "") {
-                currentStep++;
-                askNextQuestion();
-                return;
-            }
-
             const inputField = document.getElementById(q.id);
             const overlay = document.getElementById('options-overlay');
             const listContent = document.getElementById('options-list-content');
@@ -445,16 +431,32 @@ const firebaseConfig = {
 
     async function submitFinalForm() {
         if (!db) {
-            Swal.fire('Error', 'Database not connected. Retrying...', 'error');
-            initFirebase();
+            Swal.fire('Error', 'Database not connected.', 'error');
             return;
         }
         
         const submitBtn = document.getElementById('submitBtn');
+        const complaintDescription = document.getElementById('field_complaint').value;
+        
         submitBtn.disabled = true;
-        submitBtn.innerText = "Submitting...";
+        submitBtn.innerText = "Analyzing Priority...";
+
+        let detectedPriority = "Medium"; 
+
+        try {
+            const response = await fetch("http://localhost:5000/predict_priority", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ complaint: complaintDescription })
+            });
+            const result = await response.json();
+            detectedPriority = result.priority;
+        } catch (error) {
+            console.error("AI Model Error:", error);
+        }
 
         const cid = "CP" + Math.random().toString(36).substr(2, 5).toUpperCase();
+        
         const data = {
             complaintId: cid, 
             serviceNumber: document.getElementById('field_service').value,
@@ -465,8 +467,10 @@ const firebaseConfig = {
             email: document.getElementById('field_email').value, 
             address: document.getElementById('field_address').value,
             complaintType: document.getElementById('field_type').value, 
-            description: document.getElementById('field_complaint').value,
+            description: complaintDescription,
             status: "Pending", 
+            priority: detectedPriority, 
+            remarks: "", 
             timestamp: Date.now()
         };
 
@@ -483,7 +487,8 @@ const firebaseConfig = {
                         complaint_id: cid,
                         service_number: data.serviceNumber,
                         complaint_type: data.complaintType,
-                        description: data.description
+                        description: data.description,
+                        priority: detectedPriority 
                     };
 
                     emailjs.send(srv, tmp, templateParams)
@@ -494,7 +499,7 @@ const firebaseConfig = {
             Swal.fire({
                 icon: 'success', 
                 title: 'Complaint Registered',
-                text: `Your Complaint ID is: ${cid}`, 
+                text: `Your Complaint ID is: ${cid}. Priority Detected: ${detectedPriority}`, 
                 confirmButtonText: 'OK'
             }).then(() => {
                 location.reload(); 
@@ -503,7 +508,7 @@ const firebaseConfig = {
             console.error(err);
             submitBtn.disabled = false;
             submitBtn.innerText = "Submit";
-            Swal.fire('Database Error', 'Could not save complaint. Check your connection.', 'error');
+            Swal.fire('Database Error', 'Could not save complaint.', 'error');
         });
     }
 
