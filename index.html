@@ -185,12 +185,12 @@
                 }
                 auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);                
                 console.log("Firebase & EmailJS Initialized Successfully.");                
+                
                 const urlParams = new URLSearchParams(window.location.search);
                 userEmailFromUrl = urlParams.get('email') || "";
                 if (userEmailFromUrl) {
                     const emailBox = document.getElementById('field_email');
                     if(emailBox) emailBox.value = decodeURIComponent(userEmailFromUrl);
-                    showPage('complaint');
                 }
             } catch (e) {
                 console.error("Firebase Init Error:", e);
@@ -500,5 +500,3 @@
 </script>
 </body>
 </html>
-
-
