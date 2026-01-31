@@ -52,6 +52,7 @@
             padding: 10px 20px;
             position: relative;
             font-size: 1.2rem; 
+            text-decoration: none;
         }
         .nav-link.active {
             color: var(--primary) !important;
@@ -214,7 +215,7 @@
 </div>
 
 <script>
-    window.envConfig = {
+window.envConfig = {
     "apiKey": "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
     "authDomain": "voice-complaint.firebaseapp.com",
     "databaseURL': "https://voice-complaint-default-rtdb.firebaseio.com",
@@ -230,7 +231,15 @@
 };
     let auth;
     function initFirebase() {
-        const configToUse = (window.envConfig && window.envConfig.apiKey) ? window.envConfig : (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
+        let configToUse = null;
+        
+        if (window.envConfig && window.envConfig.apiKey) {
+            configToUse = window.envConfig;
+        } else if (typeof firebaseConfig !== 'undefined') {
+            configToUse = firebaseConfig;
+        } else if (window.firebaseConfig) {
+            configToUse = window.firebaseConfig;
+        }
 
         if (configToUse && configToUse.apiKey) {
             try {
@@ -241,10 +250,10 @@
                 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
                 console.log("Firebase Auth initialized.");
             } catch (e) {
-                console.error("Firebase Error:", e);
+                console.error("Firebase Initialization Error:", e);
             }
         } else {
-            console.error("Firebase configuration missing. Check config.js");
+            console.error("Firebase configuration missing. Ensure config.js is correct.");
         }
     }
 
@@ -275,52 +284,51 @@
             return;
         }
 
+        if (!auth) {
+            Swal.fire('Error', 'Authentication system is offline. Check console.', 'error');
+            return;
+        }
+
         loginBtn.innerText = "Authenticating...";
         loginBtn.disabled = true;
 
-        if (auth) {
-            try {
-                await auth.signInWithEmailAndPassword(email, password);
-                sessionStorage.setItem('isAdmin', 'true');
-                successRedirect();
-            } catch (error) {
-                console.error("Login Error:", error.code, error.message);
-                loginBtn.innerText = "LOGIN";
-                loginBtn.disabled = false;
-                
-                let msg = "Invalid official email or password.";
-                if (error.code === 'auth/invalid-email') {
-                    msg = "Please enter a valid email format.";
-                } else if (error.code === 'auth/too-many-requests') {
-                    msg = "Access blocked due to many failed attempts. Try again later.";
-                }
-                
-                Swal.fire('Login Failed', msg, 'error');
-                refreshCaptcha();
-            }
-        } else {
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+            sessionStorage.setItem('isAdmin', 'true');
+            
+            Swal.fire({
+                icon: 'success', 
+                title: 'Welcome Admin',
+                text: 'Redirecting to dashboard...',
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => {
+                window.location.replace('dashboard.html');
+            });
+
+        } catch (error) {
+            console.error("Login Error:", error.code, error.message);
             loginBtn.innerText = "LOGIN";
             loginBtn.disabled = false;
-            Swal.fire('Error', 'Authentication system is offline.', 'error');
+            
+            let msg = "Invalid official email or password.";
+            if (error.code === 'auth/invalid-email') {
+                msg = "Please enter a valid email format.";
+            } else if (error.code === 'auth/too-many-requests') {
+                msg = "Access blocked due to many failed attempts. Try again later.";
+            } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                msg = "Incorrect credentials. Please try again.";
+            }
+            
+            Swal.fire('Login Failed', msg, 'error');
+            refreshCaptcha();
         }
     }
 
-    function successRedirect() {
-        Swal.fire({
-            icon: 'success', 
-            title: 'Welcome Admin',
-            text: 'Redirecting to dashboard...',
-            timer: 1500,
-            showConfirmButton: false
-        }).then(() => {
-            window.location.replace('dashboard.html');
-        });
-    }
-
-    window.onload = function() {
+    window.addEventListener('DOMContentLoaded', () => {
         initFirebase();
         refreshCaptcha();
-    };
+    });
 </script>
 
 </body>
