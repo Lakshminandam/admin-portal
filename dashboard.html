@@ -18,7 +18,8 @@
         .nav-link { color: rgba(255,255,255,0.8); transition: 0.3s; margin: 5px 15px; border-radius: 8px; text-decoration: none; display: block; padding: 10px; }
         .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.1); color: white; }
         .main-content { padding: 30px; margin-left: 16.666667%; }
-        .stat-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-bottom: 4px solid var(--primary); }
+        .stat-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-bottom: 4px solid var(--primary); transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-5px); }
         .data-card { background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
         .table thead { background: #f8fafc; color: #64748b; font-size: 0.8rem; text-transform: uppercase; }
         .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: white; text-transform: uppercase; display: inline-block; min-width: 90px; text-align: center; }
@@ -37,8 +38,9 @@
         
         .priority-tag { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: bold; white-space: nowrap; }
 
-        .btn-start { background-color: #ef6c00; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
-        .btn-resolve { background-color: #2e7d32; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; }
+        .btn-start { background-color: #ef6c00; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; transition: 0.3s; }
+        .btn-resolve { background-color: #2e7d32; color: white; border-radius: 20px; padding: 10px 25px; border: none; font-weight: bold; font-size: 13px; transition: 0.3s; }
+        .btn-start:hover, .btn-resolve:hover { opacity: 0.9; transform: scale(1.05); }
         
         #adminEmail { 
             background: #e0e7ff; 
@@ -133,13 +135,17 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // GITHUB_ACTION_PLACEHOLDER
-
+// GITHUB_ACTION_PLACEHOLDER
     let auth, db, activeKey = null;
     let detailsModal;
 
     function initFirebase() {
-        const configToUse = (window.envConfig && window.envConfig.apiKey) ? window.envConfig : (typeof firebaseConfig !== 'undefined' ? firebaseConfig : null);
+        let configToUse = null;
+        if (window.envConfig && window.envConfig.apiKey) {
+            configToUse = window.envConfig;
+        } else if (typeof firebaseConfig !== 'undefined') {
+            configToUse = firebaseConfig;
+        }
 
         if (configToUse && configToUse.apiKey) {
             if (!firebase.apps.length) {
@@ -149,12 +155,11 @@
             db = firebase.database();
             
             auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-            
             detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
             setupAuthListener();
         } else {
             console.error("Firebase Configuration is missing!");
-            document.getElementById('complaintsTable').innerHTML = '<tr><td colspan="9" class="text-center py-4 text-danger">Configuration Error.</td></tr>';
+            document.getElementById('complaintsTable').innerHTML = '<tr><td colspan="9" class="text-center py-4 text-danger">Configuration Error. Please check config.js</td></tr>';
         }
     }
 
@@ -183,10 +188,12 @@
 
     function formatTime(ts) {
         if (!ts) return "Recently";
-        return new Date(ts).toLocaleString('en-IN', { 
-            day: '2-digit', month: 'short', year: 'numeric', 
-            hour: '2-digit', minute: '2-digit', hour12: true 
-        });
+        try {
+            return new Date(ts).toLocaleString('en-IN', { 
+                day: '2-digit', month: 'short', year: 'numeric', 
+                hour: '2-digit', minute: '2-digit', hour12: true 
+            });
+        } catch(e) { return "N/A"; }
     }
 
     function loadComplaints() {
@@ -196,7 +203,7 @@
             let counts = { pending: 0, progress: 0, resolved: 0, reopened: 0 };
             
             if (!snapshot.exists()) {
-                tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No grievances found.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No grievances found in database.</td></tr>';
                 updateCounts(counts);
                 return;
             }
@@ -216,22 +223,26 @@
                 const pColor = p === 'HIGH' ? '#dc3545' : (p === 'LOW' ? '#2e7d32' : '#f57c00');
                 const sectionDisplay = data.division || data.section || 'N/A';
 
-                tableBody.innerHTML += `
-                    <tr onclick="viewDetail('${key}')" style="cursor: pointer;">
-                        <td class="ps-4 fw-bold text-primary text-nowrap">${data.complaintId || key.substring(0,6)}</td>
-                        <td class="text-nowrap">${data.name || 'N/A'}</td>
-                        <td class="text-nowrap">${data.mobile || 'N/A'}</td>
-                        <td class="text-nowrap">${data.serviceNumber || 'N/A'}</td>
-                        <td>${data.circle || 'N/A'}</td>
-                        <td>${sectionDisplay}</td>
-                        <td><small class="text-muted">${data.complaintType || 'N/A'}</small></td>
-                        <td><span class="priority-tag" style="background: ${pColor}15; color: ${pColor}; border: 1px solid ${pColor}">${p}</span></td>
-                        <td><span class="status-badge ${bClass}">${status}</span></td>
-                    </tr>`;
+                const row = document.createElement('tr');
+                row.style.cursor = 'pointer';
+                row.onclick = () => viewDetail(key);
+                row.innerHTML = `
+                    <td class="ps-4 fw-bold text-primary text-nowrap">${data.complaintId || key.substring(0,6)}</td>
+                    <td class="text-nowrap">${data.name || 'N/A'}</td>
+                    <td class="text-nowrap">${data.mobile || 'N/A'}</td>
+                    <td class="text-nowrap">${data.serviceNumber || 'N/A'}</td>
+                    <td>${data.circle || 'N/A'}</td>
+                    <td>${sectionDisplay}</td>
+                    <td><small class="text-muted">${data.complaintType || 'N/A'}</small></td>
+                    <td><span class="priority-tag" style="background: ${pColor}15; color: ${pColor}; border: 1px solid ${pColor}">${p}</span></td>
+                    <td><span class="status-badge ${bClass}">${status}</span></td>
+                `;
+                tableBody.appendChild(row);
             });
             updateCounts(counts);
         }, (error) => {
             console.error("Database Read Error:", error);
+            tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-danger">Permission Denied or Database Error.</td></tr>';
         });
     }
 
@@ -249,8 +260,9 @@
             const status = (d.status || 'pending').toLowerCase();
             const isReopened = (status === 'reopened' || status === 're-opened');
             
-            document.getElementById('modalTitle').innerText = "Details for ID: " + (d.complaintId || key);
+            document.getElementById('modalTitle').innerText = "Complaint Detail: " + (d.complaintId || key);
             document.getElementById('officerRemarks').value = d.officer_remarks || "";
+            
             document.getElementById('startWorkBtn').style.display = (status === 'pending' || isReopened) ? 'block' : 'none';
             document.getElementById('resolveBtn').style.display = (status !== 'resolved') ? 'block' : 'none';
 
@@ -264,10 +276,11 @@
                     <div class="col-md-6 ps-md-4">
                         <div class="detail-item"><i class="bi bi-geo-alt-fill"></i><span><strong>Circle/Section:</strong> ${d.circle || 'N/A'}/${d.division || d.section || 'N/A'}</span></div>
                         <div class="detail-item"><i class="bi bi-calendar-check"></i><span><strong>Registered:</strong> ${formatTime(d.timestamp || d.createdAt)}</span></div>
+                        <div class="detail-item"><i class="bi bi-info-circle"></i><span><strong>Type:</strong> ${d.complaintType || 'N/A'}</span></div>
                     </div>
                 </div>
                 <hr>
-                <div class="description-box"><strong>Description:</strong><br>${d.description || "N/A"}</div>
+                <div class="description-box"><strong>Description:</strong><br>${d.description || "No description provided."}</div>
             `;
             if (isReopened && d.reopen_reason) {
                 html += `<div class="reopen-box"><strong>RE-OPEN REASON:</strong><br>${d.reopen_reason}</div>`;
@@ -280,11 +293,11 @@
     function updateStatus(newStatus) {
         const remarks = document.getElementById('officerRemarks').value.trim();
         if (newStatus === 'resolved' && remarks === "") { 
-            alert("Please provide officer remarks before resolving."); 
+            alert("Please provide officer remarks before resolving the complaint."); 
             return; 
         }
         
-        let updates = { 
+        const updates = { 
             status: newStatus, 
             officer_remarks: remarks,
             updatedAt: firebase.database.ServerValue.TIMESTAMP
@@ -297,7 +310,7 @@
         });
     }
     
-    initFirebase();
+    window.onload = initFirebase;
 </script>
 </body>
 </html>
