@@ -138,8 +138,9 @@
         </div>
     </div>
 </div>
+
 <script>
- window.envConfig = {
+window.envConfig = {
     "apiKey": "AIzaSyApSD9-2k39OEly1pLZnF62oFyeq7LG-FQ",
     "authDomain": "voice-complaint.firebaseapp.com",
     "databaseURL': "https://voice-complaint-default-rtdb.firebaseio.com",
@@ -166,7 +167,9 @@
         const targetPage = document.getElementById(pageId);
         if (targetPage) {
             targetPage.classList.add('active-page');
+            window.scrollTo(0, 0);
         }
+        
         if (pageId !== 'complaint') {
             aiActive = false;
             if (typeof window.speechSynthesis !== 'undefined') {
@@ -207,12 +210,8 @@
             } catch (e) {
                 console.error("Firebase Init Error:", e);
             }
-        } else {
-            console.warn("Firebase configuration not found. Please check config.js.");
         }
     }
-    
-    initFirebase();
 
     const circleData = {
         "Vijayawada": ["Gunadala Section", "Nunna Section", "Governorpet", "Patamata", "Bhavanipuram", "Gannavaram", "Ibrahimpatnam", "Kanchikacherla", "Mylavaram", "Gudivada Division", "Machilipatnam Division", "Vuyyuru Division"],
@@ -483,25 +482,23 @@
                 }
             }
 
-            if (window.Toaster) {
-                window.Toaster.postMessage("completed");
-            } else if (window.parent) {
-                window.parent.postMessage("completed", "*");
-            }
-
             Swal.fire({
                 icon: 'success', 
                 title: 'Complaint Registered',
                 text: `Your Complaint ID is: ${cid}`, 
                 confirmButtonText: 'OK'
             }).then(() => {
-                showPage('home');
+                location.reload(); 
             });
         }).catch(err => {
             console.error(err);
             Swal.fire('Database Error', 'Check your Firebase rules.', 'error');
         });
     }
+
+    window.onload = function() {
+        initFirebase();
+    };
 </script>
 </body>
 </html>
