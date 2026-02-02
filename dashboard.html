@@ -274,6 +274,7 @@
                         <div class="detail-item"><i class="bi bi-geo-alt-fill"></i><span><strong>Circle/Section:</strong> ${d.circle || 'N/A'}/${d.division || d.section || 'N/A'}</span></div>
                         <div class="detail-item"><i class="bi bi-calendar-check"></i><span><strong>Registered:</strong> ${formatTime(d.timestamp || d.createdAt)}</span></div>
                         <div class="detail-item"><i class="bi bi-info-circle"></i><span><strong>Type:</strong> ${d.complaintType || 'N/A'}</span></div>
+                        <div class="detail-item"><i class="bi bi-map-fill"></i><span><strong>Address:</strong> ${d.address || 'N/A'}</span></div>
                     </div>
                 </div>
                 <hr>
@@ -336,6 +337,12 @@
             officer_remarks: remarks,
             updatedAt: firebase.database.ServerValue.TIMESTAMP
         };
+
+        if (newStatus === 'in progress') {
+            updates.work_started_at = firebase.database.ServerValue.TIMESTAMP;
+        } else if (newStatus === 'resolved') {
+            updates.resolved_at = firebase.database.ServerValue.TIMESTAMP;
+        }
         
         db.ref('complaints/' + activeKey).once('value').then((snap) => {
             const complaintData = snap.val();
@@ -355,5 +362,3 @@
 </script>
 </body>
 </html>
-
-
