@@ -379,12 +379,17 @@ const firebaseConfig = {
                         return;
                     }
 
+                    if (q.id === "field_email" && auth.currentUser && auth.currentUser.email) {
+                        inputField.value = auth.currentUser.email; 
+                    } else {
+                        inputField.value = refineVoiceInput(text, q.id);
+                    }
+
                     clearInterval(timerCountdown);
                     isListeningForInput = false;
                     recognition.stop();
                     document.getElementById('timer_' + q.id).style.display = 'none';
                     overlay.style.display = 'none';
-                    inputField.value = refineVoiceInput(text, q.id);
                     inputField.classList.remove('voice-active');
                     currentStep++;
                     setTimeout(askNextQuestion, 800);
@@ -444,12 +449,9 @@ const firebaseConfig = {
         submitBtn.disabled = true;
         submitBtn.innerText = "Submitting..."; 
 
-        let finalEmail = document.getElementById('field_email').value.trim();
-        const currentUser = auth.currentUser;
-
-        if ((!finalEmail || !finalEmail.includes('@')) && currentUser && currentUser.email) {
-            finalEmail = currentUser.email;
-            document.getElementById('field_email').value = finalEmail;
+        let finalEmail = document.getElementById('field_email').value;
+        if (auth.currentUser && auth.currentUser.email) {
+            finalEmail = auth.currentUser.email;
         }
 
         let detectedPriority = "Medium"; 
