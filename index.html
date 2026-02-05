@@ -427,15 +427,6 @@
         submitBtn.disabled = true;
         submitBtn.innerText = "Submitting..."; 
 
-        let userEmail = document.getElementById('field_email').value.trim();
-        const loggedInUser = auth.currentUser;
-
-        if ((!userEmail || !userEmail.includes('@')) && loggedInUser && loggedInUser.email) {
-            userEmail = loggedInUser.email;
-            document.getElementById('field_email').value = userEmail;
-            console.log("Voice email invalid or missing. Using login email:", userEmail);
-        }
-
         let detectedPriority = "Medium"; 
         try {
             const response = await fetch("http://localhost:5000/predict_priority", {
@@ -457,7 +448,7 @@
             mobile: document.getElementById('field_mobile').value,
             circle: document.getElementById('field_circle').value, 
             division: document.getElementById('field_division').value,
-            email: userEmail, 
+            email: document.getElementById('field_email').value, 
             address: document.getElementById('field_address').value,
             complaintType: document.getElementById('field_type').value, 
             description: complaintDescription,
