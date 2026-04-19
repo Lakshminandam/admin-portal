@@ -147,7 +147,28 @@
     let isPaused = false;
     let aiActive = false;
     let femaleVoice = null;
-    let isListeningForInput = false; 
+    let isListeningForInput = false;
+    let isSpeaking = false;
+    
+    function showWaitPopup() {
+    Swal.fire({
+        title: "Please wait...",
+        text: "AI is asking the question",
+        icon: "info",
+        allowOutsideClick: false,
+        showConfirmButton: false
+    });
+}
+
+function showSpeakPopup() {
+    Swal.fire({
+        title: "You can Speak Now",
+        text: "You have 30 seconds",
+        icon: "success",
+        timer: 2000,
+        showConfirmButton: false
+    });
+}
 
     function getEmailFromURL() {
         const params = new URLSearchParams(window.location.search);
@@ -348,13 +369,17 @@
             
             speak(q.prompt, () => {
                 if (isPaused) return;
-                document.getElementById('ai_status').innerText = "Listening (Speak Now)";
-                isListeningForInput = true;
-                startTimer(q.id);
-                try { recognition.start(); } catch(e) {}
+                setTimeout(() => {
+                if (!isSpeaking && !isPaused) {
+                    document.getElementById('ai_status').innerText = "Listening (Speak Now)";
+                    isListeningForInput = true;
+                    startTimer(q.id);
+                    try { recognition.start(); } catch(e) {}
+                }
+            }, 300);
 
                 recognition.onresult = (event) => {
-                    if (isPaused) return;
+                    if (isPaused || isSpeaking) return;
                     const text = event.results[0][0].transcript.toLowerCase();
                     
                     if (text.includes("clear") || text.includes("reset")) {
@@ -407,6 +432,13 @@
                     clearInterval(timerCountdown);
                     isListeningForInput = false;
                     recognition.stop();
+
+                    Swal.fire({
+                    icon: "warning",
+                    title: "Time Out",
+                    text: "You didn’t respond. Try again."
+                });
+                
                     speak("Time out. Let's try that again.", askNextQuestion);
                 }
             }
@@ -417,10 +449,17 @@
         if (isPaused || typeof window.speechSynthesis === 'undefined') return;
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(text);
+        isSpeaking = true; 
+        showWaitPopup();   
         if (!femaleVoice) loadVoices();
         msg.voice = femaleVoice;
         msg.rate = 0.95; 
-        msg.onend = () => { if (callback) callback(); };
+        msg.onend = () => {
+            isSpeaking = false;  
+            Swal.close();       
+            showSpeakPopup();  
+            if (callback) callback(); 
+        };
         window.speechSynthesis.speak(msg);
     }
 
