@@ -16,6 +16,20 @@
     <style>
         :root { --primary: #003366; --accent: #FFD700; --bg: #f8fafc; }
         body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        textarea.form-control {
+        resize: none;
+        line-height: normal;
+        background-image: none !important;
+    }
+
+    #field_address {
+        height: 60px;
+    }
+
+    #field_complaint {
+        height: 100px;
+    }
         .navbar { background: var(--primary); border-bottom: 4px solid var(--accent); padding: 15px 0; }
         .nav-link { color: white !important; cursor: pointer; font-weight: 500; margin: 0 10px; }
         .page-content { display: none; padding: 50px 0; }
@@ -164,28 +178,7 @@ const firebaseConfig = {
     let isPaused = false;
     let aiActive = false;
     let femaleVoice = null;
-    let isListeningForInput = false;
-    let isSpeaking = false;
-    
-    function showWaitPopup() {
-    Swal.fire({
-        title: "Please wait...",
-        text: "AI is asking the question",
-        icon: "info",
-        allowOutsideClick: false,
-        showConfirmButton: false
-    });
-}
-
-function showSpeakPopup() {
-    Swal.fire({
-        title: "You can Speak Now",
-        text: "You have 30 seconds",
-        icon: "success",
-        timer: 2000,
-        showConfirmButton: false
-    });
-}
+    let isListeningForInput = false; 
 
     function getEmailFromURL() {
         const params = new URLSearchParams(window.location.search);
@@ -386,17 +379,13 @@ function showSpeakPopup() {
             
             speak(q.prompt, () => {
                 if (isPaused) return;
-                setTimeout(() => {
-                if (!isSpeaking && !isPaused) {
-                    document.getElementById('ai_status').innerText = "Listening (Speak Now)";
-                    isListeningForInput = true;
-                    startTimer(q.id);
-                    try { recognition.start(); } catch(e) {}
-                }
-            }, 300);
+                document.getElementById('ai_status').innerText = "Listening (Speak Now)";
+                isListeningForInput = true;
+                startTimer(q.id);
+                try { recognition.start(); } catch(e) {}
 
                 recognition.onresult = (event) => {
-                    if (isPaused || isSpeaking) return;
+                    if (isPaused) return;
                     const text = event.results[0][0].transcript.toLowerCase();
                     
                     if (text.includes("clear") || text.includes("reset")) {
@@ -449,13 +438,6 @@ function showSpeakPopup() {
                     clearInterval(timerCountdown);
                     isListeningForInput = false;
                     recognition.stop();
-
-                    Swal.fire({
-                    icon: "warning",
-                    title: "Time Out",
-                    text: "You didn’t respond. Try again."
-                });
-                
                     speak("Time out. Let's try that again.", askNextQuestion);
                 }
             }
@@ -466,17 +448,10 @@ function showSpeakPopup() {
         if (isPaused || typeof window.speechSynthesis === 'undefined') return;
         window.speechSynthesis.cancel();
         const msg = new SpeechSynthesisUtterance(text);
-        isSpeaking = true; 
-        showWaitPopup();   
         if (!femaleVoice) loadVoices();
         msg.voice = femaleVoice;
         msg.rate = 0.95; 
-        msg.onend = () => {
-            isSpeaking = false;  
-            Swal.close();       
-            showSpeakPopup();  
-            if (callback) callback(); 
-        };
+        msg.onend = () => { if (callback) callback(); };
         window.speechSynthesis.speak(msg);
     }
 
