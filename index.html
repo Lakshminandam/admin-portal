@@ -334,29 +334,6 @@
         }
     }
 
-function playBeep() {
-    try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(800, audioCtx.currentTime); // beep frequency
-        gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
-
-        oscillator.start();
-        setTimeout(() => {
-            oscillator.stop();
-            audioCtx.close();
-        }, 200); 
-    } catch (e) {
-        console.log("Beep not supported");
-    }
-}
-
     function askNextQuestion() {
         if (isPaused) return;
         if (currentStep < questions.length) {
@@ -385,7 +362,6 @@ function playBeep() {
             
             speak(q.prompt, () => {
                 if (isPaused) return;
-                playBeep();
                 document.getElementById('ai_status').innerText = "Listening (Speak Now)";
                 isListeningForInput = true;
                 startTimer(q.id);
